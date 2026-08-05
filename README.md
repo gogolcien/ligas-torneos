@@ -4,20 +4,34 @@ Servidor Node/Express para registrar torneos y llevar la clasificación de ligas
 
 ## Cómo correrlo
 
-1. Necesitas [Node.js](https://nodejs.org) 16 o superior instalado.
+1. Necesitas [Node.js](https://nodejs.org) 16 o superior instalado, y una base de datos Postgres (ver sección "Dónde viven los datos" abajo — para desarrollo local puedes usar una base gratuita de [Neon](https://neon.tech)).
 2. Abre una terminal en esta carpeta e instala las dependencias:
 
    ```bash
    npm install
    ```
 
-3. Inicia el servidor:
+3. Crea un archivo `.env` en la raíz del proyecto con tu cadena de conexión:
+
+   ```
+   DATABASE_URL=postgresql://usuario:password@tu-host.neon.tech/neondb?sslmode=require
+   ```
+
+   Este archivo **nunca** se sube a git (ya está en `.gitignore`).
+
+4. La primera vez, crea las tablas en la base de datos:
+
+   ```bash
+   node scripts/init-db.js
+   ```
+
+5. Inicia el servidor:
 
    ```bash
    npm start
    ```
 
-4. Abre tu navegador en **http://localhost:4000**
+6. Abre tu navegador en **http://localhost:4000**
 
 Por defecto usa el puerto 4000. Si quieres otro puerto:
 
@@ -36,26 +50,57 @@ PORT=5000 npm start
 
 ## Dónde viven los datos
 
-Todo se guarda en `data/db.json`, un archivo de texto plano en el propio servidor (no requiere instalar una base de datos). Si quieres reiniciar todo desde cero, borra ese archivo con el servidor apagado y se volverá a crear vacío al arrancar.
+Todo se guarda en **PostgreSQL**, en una base de datos gratuita alojada en [Neon](https://neon.tech). El servidor se conecta usando la variable de entorno `DATABASE_URL` (ver `src/data/db.js`).
 
-> Para un uso con más de un puñado de personas escribiendo al mismo tiempo, o si necesitas alta disponibilidad, conviene migrar `src/data/store.js` a una base de datos real (Postgres, SQLite, etc.). La estructura de funciones (`getLeague`, `saveLeague`, etc.) está pensada para poder reemplazar solo ese archivo sin tocar las rutas.
+El esquema tiene 4 tablas (`src/data/schema.sql`):
+- `admin_settings` — hash y salt del PIN de administrador (una sola fila).
+- `leagues` — id, nombre y `topN` de cada liga.
+- `tournaments` — torneos, ligados a una liga (`league_id`).
+- `participants` — participantes de cada torneo (nombre, deck, posición, puntos).
+
+El objeto `players` (historial agregado por jugador que usa el frontend) **no se guarda directamente**: se reconstruye en cada consulta a partir de `tournaments` + `participants` (ver `buildPlayersFromTournaments` en `src/data/store.js`).
+
+Para crear las tablas desde cero en una base de datos nueva:
+```bash
+node scripts/init-db.js
+```
+
+## Despliegue en la nube (gratis)
+
+Este proyecto está pensado para desplegarse con:
+- **Base de datos**: [Neon](https://neon.tech) (Postgres gratis, plan permanente).
+- **Servidor**: [Render](https://render.com) (Web Service gratis).
+
+Pasos:
+1. Crea un proyecto en Neon y copia su `Connection String`.
+2. Sube este repo a GitHub (asegúrate de que `.env` y `node_modules/` sigan ignorados).
+3. En Render: **New Web Service** → conecta el repo → Build command `npm install` → Start command `npm start` → plan **Free**.
+4. En la sección **Environment Variables** de Render, agrega `DATABASE_URL` con el connection string de Neon.
+5. Deploy. Render te da una URL pública (`https://tu-app.onrender.com`).
+
+> El plan gratis de Render "duerme" el servicio tras ~15 min sin tráfico; la primera visita después de eso tarda unos 30-50s en responder mientras despierta. Es esperado, no es un error.
+
+Cuando quieras un dominio propio, se configura en Render (`Settings` → `Custom Domain`) apuntando el DNS de tu dominio hacia la URL de Render — no requiere tocar código.
 
 ## Estructura del proyecto
 
 ```
 ligas-torneos/
-├── server.js                # arranca Express y monta las rutas
-├── data/db.json             # "base de datos" en JSON (se crea sola)
+├── server.js                     # arranca Express y monta las rutas
+├── scripts/
+│   └── init-db.js                # crea las tablas en la base de datos
 ├── src/
-│   ├── data/store.js        # lectura/escritura del JSON
-│   ├── routes/admin.js      # login del administrador (PIN)
-│   ├── routes/leagues.js    # ligas y torneos (API REST)
+│   ├── data/
+│   │   ├── db.js                 # pool de conexión a Postgres
+│   │   ├── schema.sql            # definición de las tablas
+│   │   └── store.js              # todas las consultas SQL de la app
+│   ├── routes/admin.js           # login del administrador (PIN)
+│   ├── routes/leagues.js         # ligas y torneos (API REST)
 │   └── utils/
-│       ├── crypto.js        # hash del PIN
-│       └── points.js        # cálculo de puntos y clasificación
-└── public/                  # frontend (HTML/CSS/JS sin framework)
+│       ├── crypto.js             # hash del PIN
+│       └── points.js             # cálculo de puntos y clasificación
+└── public/                       # frontend (HTML/CSS/JS sin framework)
     ├── index.html
     ├── styles.css
     └── app.js
 ```
-"# ojama_torneos" 
