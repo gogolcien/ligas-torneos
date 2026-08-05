@@ -115,6 +115,20 @@ async function boot() {
   await Promise.all([loadLeagues(), refreshAdminStatus()]);
   await loadSelectedLeague();
   render();
+  checkSecretUrlParam();
+}
+
+function checkSecretUrlParam() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("pijama") && state.role !== "admin") {
+    // Limpia el parámetro de la URL para que no quede visible en el
+    // historial ni al compartir el link.
+    params.delete("pijama");
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
+    window.history.replaceState({}, "", newUrl);
+    openAdminFlow();
+  }
 }
 
 /* ---------------- acciones ---------------- */
@@ -366,9 +380,13 @@ function renderHeader() {
   return `
     <div class="header">
       <div class="brand">${trophySvg()} Actas de Liga</div>
-      <button class="btn ${state.role === "admin" ? "btn-teal" : "btn-ghost"}" data-action="toggle-admin">
-        ${shieldSvg(state.role === "admin")} ${state.role === "admin" ? "Modo administrador" : "Modo consulta"}
-      </button>
+      ${
+        state.role === "admin"
+          ? `<button class="btn btn-teal" data-action="toggle-admin">
+               ${shieldSvg(true)} Modo administrador
+             </button>`
+          : ""
+      }
     </div>
   `;
 }
