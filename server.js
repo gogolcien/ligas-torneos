@@ -1,5 +1,6 @@
 const path = require("path");
 const express = require("express");
+const helmet = require("helmet");
 
 const adminRoutes = require("./src/routes/admin");
 const leagueRoutes = require("./src/routes/leagues");
@@ -11,6 +12,7 @@ async function main() {
   await init(); // asegura que exista data/db.json
 
   const app = express();
+  app.use(helmet());
   app.use(express.json());
 
   // API
@@ -21,6 +23,16 @@ async function main() {
   app.use(express.static(path.join(__dirname, "public")));
   app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
+  });
+
+  // Manejo global de errores: cualquier excepción no capturada en una
+  // ruta (gracias a asyncHandler) termina aquí en vez de tumbar el
+  // servidor o mostrar detalles internos al usuario.
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, req, res, next) => {
+    console.error("Error no controlado:", err);
+    if (res.headersSent) return next(err);
+    res.status(500).json({ error: "Ocurrió un error inesperado en el servidor." });
   });
 
   app.listen(PORT, () => {

@@ -4,17 +4,18 @@ const store = require("../data/store");
 const { computeTournamentResults, computeStandings } = require("../utils/points");
 const { normalize } = require("../utils/match");
 const { requireAdmin } = require("./admin");
+const asyncHandler = require("../utils/asyncHandler");
 
 const router = express.Router();
 
 // GET /api/leagues -> lista ligera de ligas
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const leagues = await store.listLeagues();
   res.json(leagues);
-});
+}));
 
 // POST /api/leagues -> crear liga (admin)
-router.post("/", requireAdmin, async (req, res) => {
+router.post("/", requireAdmin, asyncHandler(async (req, res) => {
   const { name, topN } = req.body || {};
   if (!name || !String(name).trim()) return res.status(400).json({ error: "El nombre es obligatorio." });
   const league = await store.createLeague({
@@ -23,26 +24,26 @@ router.post("/", requireAdmin, async (req, res) => {
     topN: Math.max(1, Number(topN) || 5),
   });
   res.status(201).json({ id: league.id, name: league.name, topN: league.topN });
-});
+}));
 
 // GET /api/leagues/:id -> datos completos + clasificación calculada
-router.get("/:id", async (req, res) => {
+router.get("/:id", asyncHandler(async (req, res) => {
   const league = await store.getLeague(req.params.id);
   if (!league) return res.status(404).json({ error: "Liga no encontrada." });
   const standings = computeStandings(league, league.topN);
   res.json({ ...league, standings });
-});
+}));
 
 // PUT /api/leagues/:id -> actualizar topN (admin)
-router.put("/:id", requireAdmin, async (req, res) => {
+router.put("/:id", requireAdmin, asyncHandler(async (req, res) => {
   const { topN } = req.body || {};
   const league = await store.updateLeagueTopN(req.params.id, Math.max(1, Number(topN) || 5));
   if (!league) return res.status(404).json({ error: "Liga no encontrada." });
   res.json({ id: league.id, name: league.name, topN: league.topN });
-});
+}));
 
 // POST /api/leagues/:id/tournaments -> agregar torneo (admin)
-router.post("/:id/tournaments", requireAdmin, async (req, res) => {
+router.post("/:id/tournaments", requireAdmin, asyncHandler(async (req, res) => {
   const league = await store.getLeague(req.params.id);
   if (!league) return res.status(404).json({ error: "Liga no encontrada." });
 
@@ -78,13 +79,13 @@ router.post("/:id/tournaments", requireAdmin, async (req, res) => {
   await store.saveLeague(league.id, { tournaments: league.tournaments, players: league.players });
 
   res.status(201).json(tournamentRecord);
-});
+}));
 
 // POST /api/leagues/:id/players/rename -> corregir el nombre de un
 // jugador y reflejarlo en todo su historial de torneos (admin).
 // Si el nuevo nombre coincide (sin acentos/mayúsculas) con otro
 // jugador ya existente, ambos se fusionan en uno solo.
-router.post("/:id/players/rename", requireAdmin, async (req, res) => {
+router.post("/:id/players/rename", requireAdmin, asyncHandler(async (req, res) => {
   const league = await store.getLeague(req.params.id);
   if (!league) return res.status(404).json({ error: "Liga no encontrada." });
 
@@ -136,12 +137,12 @@ router.post("/:id/players/rename", requireAdmin, async (req, res) => {
 
   await store.saveLeague(league.id, { tournaments: league.tournaments, players: league.players });
   res.json({ ok: true, name: finalName });
-});
+}));
 
 // PUT /api/leagues/:id/tournaments/:tournamentId -> corregir nombre y
 // fecha de un torneo ya guardado (admin). También actualiza esos datos
 // en el historial de puntos de cada jugador que participó.
-router.put("/:id/tournaments/:tournamentId", requireAdmin, async (req, res) => {
+router.put("/:id/tournaments/:tournamentId", requireAdmin, asyncHandler(async (req, res) => {
   const league = await store.getLeague(req.params.id);
   if (!league) return res.status(404).json({ error: "Liga no encontrada." });
 
@@ -166,7 +167,7 @@ router.put("/:id/tournaments/:tournamentId", requireAdmin, async (req, res) => {
 
   await store.saveLeague(league.id, { tournaments: league.tournaments, players: league.players });
   res.json(tournament);
-});
+}));
 
 // PUT /api/leagues/:id/tournaments/:tournamentId/participants -> editar la
 // lista de participantes de un torneo ya guardado (admin): corregir nombres,
@@ -175,7 +176,7 @@ router.put("/:id/tournaments/:tournamentId", requireAdmin, async (req, res) => {
 // (posición 0 = primer lugar). Se recalculan los puntos de cada quien y se
 // actualiza el historial de todos los jugadores afectados (los que estaban
 // antes y los que quedan ahora), incluyendo la etiqueta "Nuevo en la liga".
-router.put("/:id/tournaments/:tournamentId/participants", requireAdmin, async (req, res) => {
+router.put("/:id/tournaments/:tournamentId/participants", requireAdmin, asyncHandler(async (req, res) => {
   const league = await store.getLeague(req.params.id);
   if (!league) return res.status(404).json({ error: "Liga no encontrada." });
 
@@ -241,6 +242,49 @@ router.put("/:id/tournaments/:tournamentId/participants", requireAdmin, async (r
 
   await store.saveLeague(league.id, { tournaments: league.tournaments, players: league.players });
   res.json(tournament);
-});
+}));
+
+// DELETE /api/leagues/:id/tournaments/:tournamentId -> eliminar un
+// torneo por completo (admin). Quita también el resultado que ese
+// torneo aportaba al historial de cada jugador que participó, y si
+// algún jugador se queda sin ningún resultado en la liga, se elimina.
+router.delete("/:id/tournaments/:tournamentId", requireAdmin, asyncHandler(async (req, res) => {
+  const league = await store.getLeague(req.params.id);
+  if (!league) return res.status(404).json({ error: "Liga no encontrada." });
+
+  const index = league.tournaments.findIndex((t) => t.id === req.params.tournamentId);
+  if (index === -1) return res.status(404).json({ error: "Torneo no encontrado." });
+
+  const [removed] = league.tournaments.splice(index, 1);
+  const affected = new Set(removed.participants.map((p) => p.name));
+
+  affected.forEach((name) => {
+    if (league.players[name]) {
+      league.players[name].results = (league.players[name].results || []).filter(
+        (r) => r.tournamentId !== removed.id
+      );
+      if (league.players[name].results.length === 0) delete league.players[name];
+    }
+  });
+
+  // Recalcula "Nuevo en la liga" para los jugadores afectados que
+  // sigan teniendo historial (su primera aparición pudo haber sido
+  // justo el torneo que se acaba de borrar).
+  affected.forEach((name) => {
+    if (!league.players[name]) return;
+    let seen = false;
+    league.tournaments.forEach((t) => {
+      t.participants.forEach((p) => {
+        if (p.name === name) {
+          p.isNew = !seen;
+          seen = true;
+        }
+      });
+    });
+  });
+
+  await store.saveLeague(league.id, { tournaments: league.tournaments, players: league.players });
+  res.json({ ok: true });
+}));
 
 module.exports = router;

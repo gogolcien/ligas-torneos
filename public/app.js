@@ -254,6 +254,21 @@ async function submitEditTournament(name, date) {
   }
 }
 
+async function deleteTournament(id) {
+  const t = (state.leagueData.tournaments || []).find((x) => x.id === id);
+  if (!t) return;
+  const ok = window.confirm(`¿Eliminar el torneo "${t.name}"? Esta acción no se puede deshacer.`);
+  if (!ok) return;
+  try {
+    await api(`/api/leagues/${state.selectedId}/tournaments/${id}`, { method: "DELETE" });
+    state.detailTournamentId = null;
+    await loadSelectedLeague();
+    render();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
 function openEditParticipants() {
   const t = (state.leagueData.tournaments || []).find((x) => x.id === state.detailTournamentId);
   if (!t) return;
@@ -548,6 +563,7 @@ function renderTournamentDetail() {
           ? `<div style="display:flex;gap:6px">
               <button class="icon-btn" title="Editar jugadores" data-action="open-edit-participants"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></button>
               <button class="icon-btn" title="Editar torneo" data-action="open-edit-tournament" data-id="${t.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              <button class="icon-btn" title="Eliminar torneo" data-action="delete-tournament" data-id="${t.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
             </div>`
           : ""
       }
@@ -930,6 +946,9 @@ function attachEvents() {
           break;
         case "open-edit-tournament":
           openEditTournament(el.dataset.id);
+          break;
+        case "delete-tournament":
+          await deleteTournament(el.dataset.id);
           break;
         case "close-modal":
         case "overlay-close":
