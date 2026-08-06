@@ -25,7 +25,12 @@ const state = {
   editingParticipants: false, // true = mostrando el editor de jugadores del torneo abierto
   epRows: [], // filas del editor de jugadores: { id, name, deck }
   formError: "",
+  sidebarOpen: window.matchMedia("(max-width: 768px)").matches ? false : true, // colapsado por defecto en móvil
 };
+
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
 
 function emptyRow() {
   return { id: uid(), name: "", deck: "" };
@@ -137,6 +142,7 @@ async function selectLeague(id) {
   state.tab = "standings";
   state.detailTournamentId = null;
   state.step = "form";
+  if (isMobileViewport()) state.sidebarOpen = false; // en móvil, cerrar el menú tras elegir liga
   render();
   await loadSelectedLeague();
   render();
@@ -398,7 +404,7 @@ function renderHeader() {
       ${
         state.role === "admin"
           ? `<button class="btn btn-teal" data-action="toggle-admin">
-               ${shieldSvg(true)} Modo administrador
+               ${shieldSvg(true)} <span class="btn-label">Modo administrador</span>
              </button>`
           : ""
       }
@@ -412,15 +418,23 @@ function renderSidebar() {
       (l) => `<button class="league-item ${l.id === state.selectedId ? "active" : ""}" data-action="select-league" data-id="${l.id}">${escapeHtml(l.name)}</button>`
     )
     .join("");
+  const isOpen = state.sidebarOpen !== false;
+  const selected = state.leagues.find((l) => l.id === state.selectedId);
   return `
-    <div class="sidebar">
+    <div class="sidebar ${isOpen ? "" : "collapsed"}">
       <div class="sidebar-head">
-        <span class="sidebar-title">Ligas</span>
+        <button class="sidebar-toggle" type="button" data-action="toggle-sidebar" aria-expanded="${isOpen}">
+          <svg class="chevron ${isOpen ? "open" : ""}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+          <span class="sidebar-title">Ligas</span>
+          ${!isOpen && selected ? `<span class="sidebar-current mono">· ${escapeHtml(selected.name)}</span>` : ""}
+        </button>
         ${state.role === "admin" ? `<button class="icon-btn" title="Nueva liga" data-action="open-new-league"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>` : ""}
       </div>
-      ${state.leagues.length === 0
-        ? `<div class="empty-hint">Aún no hay ligas.${state.role === "admin" ? " Crea la primera con el botón +." : " Pide a un administrador que cree una."}</div>`
-        : `<div>${items}</div>`}
+      <div class="sidebar-body">
+        ${state.leagues.length === 0
+          ? `<div class="empty-hint">Aún no hay ligas.${state.role === "admin" ? " Crea la primera con el botón +." : " Pide a un administrador que cree una."}</div>`
+          : `<div>${items}</div>`}
+      </div>
     </div>
   `;
 }
@@ -485,14 +499,15 @@ function renderStandings(league) {
   if (!rows.length) return `<div class="card"><div class="empty-cell">Todavía no hay jugadores en esta liga.</div></div>`;
   return `
     <div class="card">
+      <div class="table-scroll">
       <table>
         <thead>
           <tr>
-            <th style="width:48px">#</th>
+            <th style="width:34px">#</th>
             <th>Jugador</th>
-            <th>Último deck</th>
-            <th class="text-right">Participaciones</th>
-            <th class="text-right">Puntos (top ${league.topN})</th>
+            <th class="col-hide-sm">Último deck</th>
+            <th class="text-right col-hide-xs">Participaciones</th>
+            <th class="text-right">Puntos<span class="col-hide-xs"> (top ${league.topN})</span></th>
             <th class="text-right trend-cell"></th>
             ${canEdit ? `<th style="width:36px"></th>` : ""}
           </tr>
@@ -504,8 +519,8 @@ function renderStandings(league) {
             <tr>
               <td class="mono" style="color:${i === 0 ? "var(--gold)" : "var(--ink-dim)"};font-weight:600">${i + 1}</td>
               <td style="font-weight:600">${escapeHtml(s.name)}</td>
-              <td style="color:var(--ink-dim)">${escapeHtml(s.lastDeck) || "—"}</td>
-              <td class="mono text-right" style="color:var(--ink-dim)">${s.participations}</td>
+              <td class="col-hide-sm" style="color:var(--ink-dim)">${escapeHtml(s.lastDeck) || "—"}</td>
+              <td class="mono text-right col-hide-xs" style="color:var(--ink-dim)">${s.participations}</td>
               <td class="mono text-right" style="font-weight:700;color:var(--teal);font-size:14.5px">${s.total}</td>
               <td class="text-right trend-cell">${renderTrendCell(s)}</td>
               ${
@@ -518,6 +533,7 @@ function renderStandings(league) {
             .join("")}
         </tbody>
       </table>
+      </div>
     </div>
   `;
 }
@@ -528,8 +544,9 @@ function renderTournaments() {
   if (!list.length) return `<div class="card"><div class="empty-cell">Aún no se han registrado torneos.</div></div>`;
   return `
     <div class="card">
+      <div class="table-scroll">
       <table>
-        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-right">Participantes</th><th></th></tr></thead>
+        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-right col-hide-xs">Participantes</th><th></th></tr></thead>
         <tbody>
           ${list
             .map(
@@ -537,13 +554,14 @@ function renderTournaments() {
             <tr class="clickable" data-action="open-tournament" data-id="${t.id}">
               <td style="font-weight:600">${escapeHtml(t.name)}</td>
               <td class="mono" style="color:var(--ink-dim)">${t.date}</td>
-              <td class="mono text-right">${t.participants.length}</td>
+              <td class="mono text-right col-hide-xs">${t.participants.length}</td>
               <td class="text-right" style="color:var(--ink-dim)">›</td>
             </tr>`
             )
             .join("")}
         </tbody>
       </table>
+      </div>
     </div>
   `;
 }
@@ -575,8 +593,9 @@ function renderTournamentDetail() {
 function renderParticipantsTable(t) {
   return `
     <div class="card">
+      <div class="table-scroll">
       <table>
-        <thead><tr><th style="width:48px">Pos.</th><th>Jugador</th><th>Deck</th><th class="text-right">Puntos</th><th></th></tr></thead>
+        <thead><tr><th style="width:40px">Pos.</th><th>Jugador</th><th class="col-hide-sm">Deck</th><th class="text-right">Puntos</th><th></th></tr></thead>
         <tbody>
           ${t.participants
             .map(
@@ -584,14 +603,15 @@ function renderParticipantsTable(t) {
             <tr>
               <td class="mono" style="color:${p.position === 0 ? "var(--gold)" : "var(--ink-dim)"};font-weight:600">${p.position}</td>
               <td style="font-weight:600">${escapeHtml(p.name)}</td>
-              <td style="color:var(--ink-dim)">${escapeHtml(p.deck) || "—"}</td>
+              <td class="col-hide-sm" style="color:var(--ink-dim)">${escapeHtml(p.deck) || "—"}</td>
               <td class="mono text-right" style="font-weight:700;color:var(--teal)">+${p.points}</td>
-              <td class="text-right">${p.isNew ? `<span class="badge badge-gold">Nuevo en la liga</span>` : ""}</td>
+              <td class="text-right">${p.isNew ? `<span class="badge badge-gold">Nuevo</span>` : ""}</td>
             </tr>`
             )
             .join("")}
         </tbody>
       </table>
+      </div>
     </div>
   `;
 }
@@ -851,6 +871,10 @@ function attachEvents() {
           break;
         case "select-league":
           await selectLeague(el.dataset.id);
+          break;
+        case "toggle-sidebar":
+          state.sidebarOpen = !state.sidebarOpen;
+          render();
           break;
         case "select-tab":
           state.tab = el.dataset.tab;
