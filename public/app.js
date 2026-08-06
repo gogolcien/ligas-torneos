@@ -400,7 +400,7 @@ function shieldSvg(on) {
 function renderHeader() {
   return `
     <div class="header">
-      <div class="brand">${trophySvg()} Actas de Liga</div>
+      <div class="brand">${trophySvg()} Ligas Tecnocentro</div>
       ${
         state.role === "admin"
           ? `<button class="btn btn-teal" data-action="toggle-admin">
@@ -507,7 +507,7 @@ function renderStandings(league) {
             <th>Jugador</th>
             <th class="col-hide-sm">Último deck</th>
             <th class="text-right col-hide-xs">Participaciones</th>
-            <th class="text-right">Puntos<span class="col-hide-xs"> (top ${league.topN})</span></th>
+            <th class="text-right">Puntos</th>
             <th class="text-right trend-cell"></th>
             ${canEdit ? `<th style="width:36px"></th>` : ""}
           </tr>
