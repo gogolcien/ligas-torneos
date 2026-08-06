@@ -139,6 +139,34 @@ textarea.paste-area:focus { border-color: var(--teal); }
 }
 .hint-text { font-size: 11.5px; color: var(--ink-dim); }
 
+/* --------- select (reutiliza el estilo de input) --------- */
+select {
+  font-family: 'Inter', sans-serif; font-size: 13.5px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 9px 11px; color: var(--ink); outline: none; width: 100%;
+}
+select:focus { border-color: var(--teal); }
+
+/* --------- pareos: mesas y resultados --------- */
+.pairing-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.pairing-table-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-dim); margin-bottom: 8px; }
+.pairing-row { display: flex; align-items: center; gap: 10px; }
+.pairing-side { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); }
+.pairing-side.win { background: #5cb85c22; border-color: #5cb85c55; }
+.pairing-side.loss { background: #c1594f22; border-color: #c1594f55; }
+.pairing-side-name { font-weight: 600; font-size: 13.5px; }
+.pairing-side-stats { font-size: 11px; color: var(--ink-dim); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+.pairing-vs { color: var(--ink-dim); font-size: 11px; font-weight: 700; padding: 0 2px; }
+.pairing-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.autowin-tag { background: #d4a53722; color: var(--gold); border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 700; }
+.autolose-tag { background: #c1594f22; color: var(--red); border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 700; }
+.round-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.round-tab-btn {
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600; color: var(--ink-dim); cursor: pointer;
+}
+.round-tab-btn.active { background: var(--gold); color: #1b1204; border-color: var(--gold); }
+.disabled-row { opacity: .5; }
+
 /* --------- modal --------- */
 .modal-overlay {
   position: fixed; inset: 0; background: #00000099; display: flex; align-items: center; justify-content: center; z-index: 50;
@@ -150,61 +178,3 @@ textarea.paste-area:focus { border-color: var(--teal); }
 .modal-note { font-size: 12.5px; color: var(--ink-dim); margin-bottom: 10px; line-height: 1.5; }
 .field-gap { height: 12px; }
 .modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 8px; }
-
-/* --------- sidebar plegable (encabezado siempre visible) --------- */
-.sidebar-toggle {
-  display: flex; align-items: center; gap: 6px; background: none; border: none; padding: 0;
-  color: var(--ink); cursor: default; text-align: left; flex: 1; min-width: 0;
-}
-.sidebar-current {
-  color: var(--ink-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.chevron { flex-shrink: 0; transition: transform .15s ease; display: none; } /* solo se ve/gira en móvil */
-.sidebar-body { overflow: hidden; }
-
-/* --------- tablas con scroll horizontal en pantallas angostas --------- */
-.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-/* ==================================================================
-   RESPONSIVE — móvil
-   ================================================================== */
-@media (max-width: 768px) {
-  .header { padding: 12px 14px; }
-  .brand { font-size: 17px; }
-
-  .layout { flex-direction: column; min-height: 0; }
-
-  .sidebar {
-    width: 100%; border-right: none; border-bottom: 1px solid var(--line);
-    padding: 10px 14px;
-  }
-  .sidebar-head { margin-bottom: 0; }
-  .sidebar-toggle { cursor: pointer; padding: 4px 0; }
-  .chevron { display: block; }
-  .chevron.open { transform: rotate(90deg); }
-  .sidebar-body { max-height: 0; transition: max-height .18s ease; }
-  .sidebar.collapsed .sidebar-body { max-height: 0; overflow: hidden; }
-  .sidebar:not(.collapsed) .sidebar-body { max-height: 60vh; overflow-y: auto; margin-top: 10px; }
-  .league-item { padding: 11px 12px; font-size: 14px; } /* objetivo táctil más grande */
-
-  .main { padding: 16px 14px 28px; }
-  .league-head { flex-wrap: wrap; row-gap: 6px; margin-bottom: 14px; }
-  .league-title { font-size: 21px; }
-
-  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 14px; }
-  .tab-btn { padding: 10px 2px; font-size: 13px; flex-shrink: 0; }
-
-  th, td { padding: 9px 8px; font-size: 12.5px; }
-  .col-hide-sm { display: none; }
-
-  /* evita el zoom automático de iOS al enfocar inputs (min. 16px) */
-  input, textarea.paste-area { font-size: 16px; }
-
-  .modal-box { padding: 16px; width: 100%; }
-}
-
-@media (max-width: 420px) {
-  .btn-label { display: none; } /* deja solo el icono del botón de admin */
-  .col-hide-xs { display: none; }
-  .league-title { font-size: 19px; }
-}

@@ -4,6 +4,7 @@ const helmet = require("helmet");
 
 const adminRoutes = require("./src/routes/admin");
 const leagueRoutes = require("./src/routes/leagues");
+const pareoRoutes = require("./src/routes/pareos");
 const { init } = require("./src/data/store");
 
 const PORT = process.env.PORT || 4000;
@@ -18,9 +19,18 @@ async function main() {
   // API
   app.use("/api/admin", adminRoutes);
   app.use("/api/leagues", leagueRoutes);
+  app.use("/api/pareos", pareoRoutes);
 
   // Frontend estático
   app.use(express.static(path.join(__dirname, "public")));
+
+  // Ruta propia del sistema de pareos: jorgeojama.onrender.com/pareos
+  // (y cualquier sub-ruta, ej. /pareos/algo, por si el frontend agrega
+  // navegación con historial más adelante).
+  app.get(["/pareos", "/pareos/*"], (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "pareos.html"));
+  });
+
   app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   });

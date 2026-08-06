@@ -82,6 +82,23 @@ Pasos:
 
 Cuando quieras un dominio propio, se configura en Render (`Settings` → `Custom Domain`) apuntando el DNS de tu dominio hacia la URL de Render — no requiere tocar código.
 
+## Sistema de Pareos (Suizo) — ruta `/pareos`
+
+Además de "Actas de Liga", el servidor expone un segundo sistema en `/pareos` (ej. `https://jorgeojama.onrender.com/pareos`), para correr un torneo en vivo con pareo suizo. **Reutiliza todo lo existente**: el mismo pool de Postgres (`src/data/db.js`), el mismo `server.js`/Express, los mismos estilos (`public/styles.css`) y el mismo PIN de administrador (`/api/admin/*`, mismo token guardado en `localStorage`).
+
+- **Tablas nuevas** (agregadas a `src/data/schema.sql`): `pareo_tournaments`, `pareo_players`, `pareo_rounds`, `pareo_matches`. Para crearlas en una base ya existente, vuelve a correr:
+  ```bash
+  node scripts/init-db.js
+  ```
+  (usa `CREATE TABLE IF NOT EXISTS`, así que no toca las tablas de `ligas`/`torneos` que ya tienes).
+
+- **Vistas** (`public/pareos.html` + `public/pareos.js`):
+  - **Registro**: alta/edición/inhabilitación/eliminación de jugadores. Solo se puede eliminar antes de que exista la ronda 1.
+  - **Pareos**: pareo automático por ronda (botón "Parear siguiente ronda"), pareo manual antes de capturar resultados, captura de resultados (gana A / gana B / ambos pierden), conversión AUTOWIN ↔ AUTOLOSE.
+  - **Standings**: tabla ordenada por Puntos → OP% → OOP% → SL.
+
+- **Algoritmo de pareo** (`src/utils/swiss.js`): ronda 1 aleatoria; rondas siguientes agrupadas por puntaje, evitando rivales repetidos con downpairing cuando hace falta, y AUTOWIN para el jugador de menor puntaje que aún no lo haya recibido. Los desempates (P, OP%, OOP%, SL) siguen exactamente las fórmulas que diste, incluyendo omitir las rondas de AUTOWIN al promediar el récord de los rivales.
+
 ## Estructura del proyecto
 
 ```
