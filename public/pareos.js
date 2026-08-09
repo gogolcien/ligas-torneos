@@ -218,6 +218,18 @@ async function pairNextRound() {
   }
 }
 
+async function clearRoundResults(roundId) {
+  if (!confirm("¿Borrar todos los resultados registrados de esta ronda? Los AUTOWIN/AUTOLOSE no se tocan.")) return;
+  try {
+    state.data = await api(`/api/pareos/${state.selectedId}/rounds/${roundId}/clear-results`, { method: "POST" });
+    state.manualMode = false;
+    render();
+  } catch (e) {
+    state.formError = e.message;
+    render();
+  }
+}
+
 function openManualPairing() {
   const round = state.data.rounds.find((r) => r.id === state.activeRoundId);
   if (!round) return;
@@ -283,14 +295,6 @@ async function setMatchResult(matchId, result) {
     state.formError = e.message;
     render();
   }
-}
-
-function matchById(matchId) {
-  for (const r of state.data.rounds) {
-    const m = r.matches.find((x) => x.id === matchId);
-    if (m) return m;
-  }
-  return null;
 }
 
 async function toggleAutolose(matchId) {
@@ -499,6 +503,11 @@ function renderPareos() {
         ${
           isLastRound && !state.manualMode
             ? `<button class="btn btn-ghost" data-action="open-manual-pairing" ${round && round.matches.some((m) => m.playerBId != null && m.result) ? "disabled title='Ya hay resultados registrados'" : ""}>Pareos manuales</button>`
+            : ""
+        }
+        ${
+          isLastRound && !state.manualMode && round && round.matches.some((m) => m.playerBId != null && m.result)
+            ? `<button class="btn btn-ghost" data-action="clear-round-results" data-id="${round.id}">Limpiar resultados de la ronda</button>`
             : ""
         }
       </div>
@@ -771,6 +780,9 @@ function attachEvents() {
         case "pair-next-round":
           await pairNextRound();
           break;
+        case "clear-round-results":
+          await clearRoundResults(Number(el.dataset.id));
+          break;
         case "open-manual-pairing":
           openManualPairing();
           break;
@@ -783,16 +795,9 @@ function attachEvents() {
         case "save-manual-pairing":
           await saveManualPairing();
           break;
-        case "set-result": {
-          const matchId = Number(el.dataset.id);
-          const clickedResult = el.dataset.result;
-          const current = matchById(matchId);
-          // Si ya estaba marcado ese resultado, un segundo clic lo borra
-          // (así se puede volver a hacer pareo manual de esa ronda).
-          const nextResult = current && current.result === clickedResult ? null : clickedResult;
-          await setMatchResult(matchId, nextResult);
+        case "set-result":
+          await setMatchResult(Number(el.dataset.id), el.dataset.result);
           break;
-        }
         case "toggle-autolose":
           await toggleAutolose(Number(el.dataset.id));
           break;
