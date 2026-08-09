@@ -202,6 +202,19 @@ async function setMatchResult(tournamentId, matchId, result) {
   return loadFullPareoTournament(tournamentId);
 }
 
+// Borra los resultados de todas las partidas "reales" (con ambos
+// jugadores) de una ronda, para poder repetir el pareo manual. Las
+// mesas de AUTOWIN/AUTOLOSE no se tocan (no tienen rival, no bloquean
+// el pareo manual).
+async function clearRoundResults(tournamentId, roundId) {
+  await pool.query(
+    `UPDATE pareo_matches SET result = NULL
+     WHERE round_id = $1 AND tournament_id = $2 AND player_b_id IS NOT NULL`,
+    [roundId, tournamentId]
+  );
+  return loadFullPareoTournament(tournamentId);
+}
+
 module.exports = {
   listPareoTournaments,
   createPareoTournament,
@@ -214,4 +227,5 @@ module.exports = {
   createRoundWithPairs,
   replaceRoundPairs,
   setMatchResult,
+  clearRoundResults,
 };
