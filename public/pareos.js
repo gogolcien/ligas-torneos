@@ -73,6 +73,27 @@ async function selectTournament(id) {
   render();
 }
 
+async function deleteTournament(id) {
+  if (!confirm("¿Eliminar este torneo por completo? Se borrarán todos sus jugadores, rondas y resultados. Esta acción no se puede deshacer.")) return;
+  try {
+    await api(`/api/pareos/${id}`, { method: "DELETE" });
+    if (state.selectedId === id) {
+      state.selectedId = null;
+      state.data = null;
+      state.activeRoundId = null;
+    }
+    await loadTournaments();
+    if (!state.selectedId && state.tournaments.length) {
+      await selectTournament(state.tournaments[0].id);
+    } else {
+      render();
+    }
+  } catch (e) {
+    state.formError = e.message;
+    render();
+  }
+}
+
 function openAdminFlow() {
   if (state.role === "admin") {
     state.role = "user";
@@ -312,9 +333,16 @@ function renderSidebar() {
   const items = state.tournaments
     .map(
       (t) => `
-      <button class="league-item ${t.id === state.selectedId ? "active" : ""}" data-action="select-tournament" data-id="${escapeAttr(t.id)}">
-        ${escapeHtml(t.name)}
-      </button>
+      <div class="league-item-row">
+        <button class="league-item ${t.id === state.selectedId ? "active" : ""}" data-action="select-tournament" data-id="${escapeAttr(t.id)}">
+          ${escapeHtml(t.name)}
+        </button>
+        ${
+          state.role === "admin"
+            ? `<button class="mini-btn danger" data-action="delete-tournament" data-id="${escapeAttr(t.id)}" title="Eliminar torneo">🗑</button>`
+            : ""
+        }
+      </div>
     `
     )
     .join("");
@@ -710,6 +738,9 @@ function attachEvents() {
           state.activeRoundId = Number(el.dataset.id);
           state.manualMode = false;
           render();
+          break;
+        case "delete-tournament":
+          await deleteTournament(el.dataset.id);
           break;
         case "open-new-tournament":
           state.modal = "newTournament";
