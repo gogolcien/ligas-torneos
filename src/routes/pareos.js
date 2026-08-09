@@ -166,6 +166,22 @@ router.post(
   })
 );
 
+// POST /api/pareos/:id/rounds/:roundId/clear-results -> borra los
+// resultados registrados de la ronda (admin), para poder repetir el
+// pareo manual sin tener que eliminar la ronda completa.
+router.post(
+  "/:id/rounds/:roundId/clear-results",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const existing = await store.getPareoTournament(req.params.id);
+    if (!findTournamentOr404(res, existing)) return;
+    const round = existing.rounds.find((r) => String(r.id) === String(req.params.roundId));
+    if (!round) return res.status(404).json({ error: "Ronda no encontrada." });
+    const tournament = await store.clearRoundResults(req.params.id, round.id);
+    res.json(serialize(tournament));
+  })
+);
+
 // PUT /api/pareos/:id/rounds/:roundId/pairings -> pareo manual (admin)
 // body: { pairs: [{ playerAId, playerBId }] } (playerBId null = AUTOWIN)
 router.put(
