@@ -195,14 +195,15 @@ router.put(
   })
 );
 
-// PUT /api/pareos/:id/matches/:matchId/result -> registrar resultado (admin)
-// body: { result: 'a_win' | 'b_win' | 'double_loss' | 'draw' }
+// PUT /api/pareos/:id/matches/:matchId/result -> registrar o borrar resultado (admin)
+// body: { result: 'a_win' | 'b_win' | 'double_loss' | 'draw' | null }
+// result: null borra el resultado ya registrado (para poder repareo manual).
 router.put(
   "/:id/matches/:matchId/result",
   requireAdmin,
   asyncHandler(async (req, res) => {
     const { result } = req.body || {};
-    if (!["a_win", "b_win", "double_loss", "draw"].includes(result)) {
+    if (result !== null && !["a_win", "b_win", "double_loss", "draw"].includes(result)) {
       return res.status(400).json({ error: "Resultado inválido." });
     }
     const existing = await store.getPareoTournament(req.params.id);
