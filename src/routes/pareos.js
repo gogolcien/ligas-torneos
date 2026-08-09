@@ -78,6 +78,18 @@ router.get(
   })
 );
 
+// DELETE /api/pareos/:id -> eliminar torneo completo (admin)
+router.delete(
+  "/:id",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const existing = await store.getPareoTournament(req.params.id);
+    if (!findTournamentOr404(res, existing)) return;
+    await store.deleteTournament(req.params.id);
+    res.json({ ok: true });
+  })
+);
+
 // POST /api/pareos/:id/players -> agregar jugador (admin)
 router.post(
   "/:id/players",
