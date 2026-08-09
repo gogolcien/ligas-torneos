@@ -21,7 +21,7 @@ function shuffle(arr) {
 
 // Para cada jugador arma la lista de rondas que ha jugado:
 // { roundNumber, opponentId (null = AUTOWIN/AUTOLOSE), outcome }
-// outcome: 'win' | 'loss' | 'double_loss'
+// outcome: 'win' | 'loss' | 'double_loss' | 'draw'
 function buildPlayerRounds(tournament) {
   const roundsByPlayer = {};
   tournament.players.forEach((p) => {
@@ -53,6 +53,9 @@ function buildPlayerRounds(tournament) {
       } else if (m.result === "b_win") {
         outcomeA = "loss";
         outcomeB = "win";
+      } else if (m.result === "draw") {
+        outcomeA = "draw";
+        outcomeB = "draw";
       } else {
         // 'double_loss': ambos jugadores pierden
         outcomeA = "double_loss";
@@ -79,13 +82,15 @@ function buildPlayerRounds(tournament) {
   return roundsByPlayer;
 }
 
-// Record propio de un jugador: rondas ganadas / rondas jugadas
-// (incluye AUTOWIN/AUTOLOSE como ronda jugada).
+// Record propio de un jugador: rondas ganadas / rondas jugadas, donde
+// un empate cuenta como 1/3 de triunfo (misma proporción que 1 de los
+// 3 puntos que da una victoria).
 function ownRecord(rounds) {
   const played = rounds.length;
   if (!played) return 0;
   const wins = rounds.filter((r) => r.outcome === "win").length;
-  return wins / played;
+  const draws = rounds.filter((r) => r.outcome === "draw").length;
+  return (wins + draws / 3) / played;
 }
 
 // Calcula puntos, record propio, OP%, OOP% y SL para todos los
@@ -98,7 +103,9 @@ function computeStats(tournament) {
   const record = {};
   ids.forEach((id) => {
     const rounds = roundsByPlayer[id];
-    points[id] = rounds.filter((r) => r.outcome === "win").length * 3;
+    const wins = rounds.filter((r) => r.outcome === "win").length;
+    const draws = rounds.filter((r) => r.outcome === "draw").length;
+    points[id] = wins * 3 + draws * 1;
     record[id] = ownRecord(rounds);
   });
 
