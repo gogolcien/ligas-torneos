@@ -59,6 +59,10 @@ async function setPareoTournamentStatus(id, status) {
   return loadFullPareoTournament(id);
 }
 
+async function deleteTournament(id) {
+  await pool.query(`DELETE FROM pareo_tournaments WHERE id = $1`, [id]);
+}
+
 /* ---------------- Jugadores ---------------- */
 
 // Agrega un jugador. Si el torneo ya tiene rondas creadas, se le
@@ -203,6 +207,7 @@ module.exports = {
   createPareoTournament,
   getPareoTournament,
   setPareoTournamentStatus,
+  deleteTournament,
   addPlayer,
   updatePlayer,
   deletePlayer,
