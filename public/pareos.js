@@ -1,6 +1,6 @@
 /* ==================================================================
    Sistema de Pareos (Suizo) — frontend en JS puro, habla con /api/pareos.
-   Reutiliza el mismo PIN de administrador que "Actas de Liga"
+   Reutiliza el mismo PIN de administrador que "Ligas Tecnocentro"
    (misma llave de localStorage y mismos endpoints /api/admin/*).
    ================================================================== */
 
@@ -299,7 +299,7 @@ function renderHeader() {
     <div class="header">
       <div class="brand">🀄 Pareos — Sistema Suizo</div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <a href="/" class="btn btn-ghost" style="text-decoration:none;">Actas de Liga</a>
+        <a href="/" class="btn btn-ghost" style="text-decoration:none;">Ligas Tecnocentro</a>
         <button class="btn ${state.role === "admin" ? "btn-teal" : "btn-ghost"}" data-action="toggle-admin">
           ${state.role === "admin" ? "Modo administrador ✓" : "Modo consulta"}
         </button>
@@ -503,19 +503,19 @@ function renderMatchCard(m, tableNum, editable) {
   const aWin = m.result === "a_win";
   const bWin = m.result === "b_win";
   const doubleLoss = m.result === "double_loss";
-  const aClass = aWin ? "win" : doubleLoss ? "loss" : "";
-  const bClass = bWin ? "win" : doubleLoss ? "loss" : "";
+  const draw = m.result === "draw";
+  const sideClass = (isWin) => (draw ? "draw" : isWin ? "win" : doubleLoss ? "loss" : "");
 
   return `
     <div class="pairing-card">
       <div class="pairing-table-num">Mesa ${tableNum}</div>
       <div class="pairing-row">
-        <div class="pairing-side ${aClass}">
+        <div class="pairing-side ${sideClass(aWin)}">
           <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
           <div class="pairing-side-stats">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((a?.oopPercent || 0) * 100).toFixed(1)}%</div>
         </div>
         <div class="pairing-vs">VS</div>
-        <div class="pairing-side ${bClass}">
+        <div class="pairing-side ${sideClass(bWin)}">
           <div class="pairing-side-name">${escapeHtml(b?.name || "?")}</div>
           <div class="pairing-side-stats">Pts ${b?.points ?? 0} · OP% ${((b?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((b?.oopPercent || 0) * 100).toFixed(1)}%</div>
         </div>
@@ -526,6 +526,7 @@ function renderMatchCard(m, tableNum, editable) {
         <div class="pairing-actions">
           <button class="btn ${aWin ? "btn-teal" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="a_win">Gana ${escapeHtml(a?.name || "A")}</button>
           <button class="btn ${bWin ? "btn-teal" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="b_win">Gana ${escapeHtml(b?.name || "B")}</button>
+          <button class="btn ${draw ? "btn-gold" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="draw">Empate</button>
           <button class="btn ${doubleLoss ? "btn-danger" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="double_loss">Ambos pierden</button>
         </div>
       `
@@ -644,7 +645,7 @@ function renderModal() {
     return modalShell(
       state.pinMode === "setup" ? "Configura el PIN de administrador" : "Modo administrador",
       `
-      ${state.pinMode === "setup" ? `<div class="modal-note">Este PIN se comparte con "Actas de Liga": es el mismo PIN de administrador para todo el sitio.</div>` : ""}
+      ${state.pinMode === "setup" ? `<div class="modal-note">Este PIN se comparte con "Ligas Tecnocentro": es el mismo PIN de administrador para todo el sitio.</div>` : ""}
       <label class="field-label">PIN</label>
       <input id="m-pin" type="password" />
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
