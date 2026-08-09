@@ -285,6 +285,14 @@ async function setMatchResult(matchId, result) {
   }
 }
 
+function matchById(matchId) {
+  for (const r of state.data.rounds) {
+    const m = r.matches.find((x) => x.id === matchId);
+    if (m) return m;
+  }
+  return null;
+}
+
 async function toggleAutolose(matchId) {
   try {
     state.data = await api(`/api/pareos/${state.selectedId}/matches/${matchId}/toggle-autolose`, {
@@ -775,9 +783,16 @@ function attachEvents() {
         case "save-manual-pairing":
           await saveManualPairing();
           break;
-        case "set-result":
-          await setMatchResult(Number(el.dataset.id), el.dataset.result);
+        case "set-result": {
+          const matchId = Number(el.dataset.id);
+          const clickedResult = el.dataset.result;
+          const current = matchById(matchId);
+          // Si ya estaba marcado ese resultado, un segundo clic lo borra
+          // (así se puede volver a hacer pareo manual de esa ronda).
+          const nextResult = current && current.result === clickedResult ? null : clickedResult;
+          await setMatchResult(matchId, nextResult);
           break;
+        }
         case "toggle-autolose":
           await toggleAutolose(Number(el.dataset.id));
           break;
