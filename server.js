@@ -24,13 +24,23 @@ async function main() {
   // Frontend estático
   app.use(express.static(path.join(__dirname, "public")));
 
-  // Ruta propia del sistema de pareos: jorgeojama.onrender.com/pareos
-  // (y cualquier sub-ruta, ej. /pareos/algo, por si el frontend agrega
-  // navegación con historial más adelante).
-  app.get(["/pareos", "/pareos/*"], (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "pareos.html"));
+  // Cada servicio del sitio vive en su propia ruta (jorgeojama.onrender.com/<slug>)
+  // y cualquier sub-ruta (ej. /pareos/algo), por si el frontend agrega
+  // navegación con historial más adelante. Para agregar un servicio nuevo
+  // solo hay que sumar una entrada aquí y su archivo .html en /public.
+  const services = [
+    { slug: "ligas", file: "ligas.html" },
+    { slug: "pareos", file: "pareos.html" },
+  ];
+  services.forEach(({ slug, file }) => {
+    app.get([`/${slug}`, `/${slug}/*`], (req, res) => {
+      res.sendFile(path.join(__dirname, "public", file));
+    });
   });
 
+  // Página de inicio: catálogo de servicios (también la sirve
+  // express.static para "/", esta ruta es la red de seguridad para
+  // cualquier otra URL que no matchee nada de lo anterior).
   app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   });

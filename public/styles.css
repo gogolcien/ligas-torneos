@@ -196,6 +196,41 @@ select:focus { border-color: var(--teal); }
 /* --------- tablas con scroll horizontal en pantallas angostas --------- */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+/* --------- página de inicio: catálogo de servicios --------- */
+.home-wrap { max-width: 920px; margin: 0 auto; padding: 44px 26px 60px; }
+.home-intro { margin-bottom: 28px; }
+.home-title { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; margin: 0 0 6px; }
+.home-sub { color: var(--ink-dim); font-size: 14px; margin: 0; }
+
+.service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+
+.service-card {
+  display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; overflow: hidden; text-decoration: none; color: var(--ink);
+  transition: border-color .15s ease, transform .15s ease;
+}
+.service-card:hover { border-color: var(--line); transform: translateY(-2px); }
+.service-card[data-accent="gold"]:hover { border-color: var(--gold); }
+.service-card[data-accent="teal"]:hover { border-color: var(--teal); }
+
+.service-card-image { line-height: 0; background: var(--panel2); border-bottom: 1px solid var(--line); }
+.service-card-image svg { display: block; width: 100%; height: auto; }
+
+.service-card-body { padding: 16px 18px 6px; flex: 1; }
+.service-card-name { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; margin-bottom: 6px; }
+.service-card-desc { color: var(--ink-dim); font-size: 13px; line-height: 1.55; }
+
+.service-card-cta {
+  padding: 14px 18px 18px; font-size: 13px; font-weight: 700; letter-spacing: .02em;
+}
+.service-card[data-accent="gold"] .service-card-cta { color: var(--gold); }
+.service-card[data-accent="teal"] .service-card-cta { color: var(--teal); }
+
+@media (max-width: 768px) {
+  .home-wrap { padding: 28px 16px 40px; }
+  .home-title { font-size: 25px; }
+}
+
 /* ==================================================================
    RESPONSIVE — móvil
    ================================================================== */

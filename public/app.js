@@ -401,13 +401,17 @@ function renderHeader() {
   return `
     <div class="header">
       <div class="brand">${trophySvg()} Ligas Tecnocentro</div>
-      ${
-        state.role === "admin"
-          ? `<button class="btn btn-teal" data-action="toggle-admin">
-               ${shieldSvg(true)} <span class="btn-label">Modo administrador</span>
-             </button>`
-          : ""
-      }
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a href="/" class="btn btn-ghost" style="text-decoration:none;">Inicio</a>
+        <a href="/pareos" class="btn btn-ghost" style="text-decoration:none;">Pareos</a>
+        ${
+          state.role === "admin"
+            ? `<button class="btn btn-teal" data-action="toggle-admin">
+                 ${shieldSvg(true)} <span class="btn-label">Modo administrador</span>
+               </button>`
+            : ""
+        }
+      </div>
     </div>
   `;
 }

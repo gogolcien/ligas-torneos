@@ -60,6 +60,21 @@ async function boot() {
   await Promise.all([loadTournaments(), refreshAdminStatus()]);
   await loadSelectedTournament();
   render();
+  checkSecretUrlParam();
+}
+
+// Acceso al modo administrador vía "?pijama" en la URL (igual que en
+// Ligas Tecnocentro): no hay botón visible de "Modo consulta", solo se
+// activa con el parámetro secreto. Una vez usado, se limpia de la URL.
+function checkSecretUrlParam() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("pijama") && state.role !== "admin") {
+    params.delete("pijama");
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
+    window.history.replaceState({}, "", newUrl);
+    openAdminFlow();
+  }
 }
 
 /* ---------------- acciones: torneo / navegación ---------------- */
@@ -332,10 +347,13 @@ function renderHeader() {
     <div class="header">
       <div class="brand">🀄 Pareos — Sistema Suizo</div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <a href="/" class="btn btn-ghost" style="text-decoration:none;">Ligas Tecnocentro</a>
-        <button class="btn ${state.role === "admin" ? "btn-teal" : "btn-ghost"}" data-action="toggle-admin">
-          ${state.role === "admin" ? "Modo administrador ✓" : "Modo consulta"}
-        </button>
+        <a href="/" class="btn btn-ghost" style="text-decoration:none;">Inicio</a>
+        <a href="/ligas" class="btn btn-ghost" style="text-decoration:none;">Ligas Tecnocentro</a>
+        ${
+          state.role === "admin"
+            ? `<button class="btn btn-teal" data-action="toggle-admin">Modo administrador ✓</button>`
+            : ""
+        }
       </div>
     </div>
   `;
@@ -480,12 +498,17 @@ function renderPareos() {
   const round = d.rounds.find((r) => r.id === state.activeRoundId);
   const isLastRound = round && lastRound && round.id === lastRound.id;
 
+  // Los resultados (y el AUTOWIN/AUTOLOSE) se pueden corregir en
+  // cualquier ronda, no solo en la última: los puntos y el OP%/OOP% de
+  // los rivales se recalculan siempre a partir de todos los resultados
+  // guardados. El pareo manual de mesas sí sigue limitado a la última
+  // ronda (repartir jugadores en rondas ya cerradas no tendría sentido).
   let body;
   if (state.manualMode && isLastRound) {
     body = renderManualPairingEditor();
   } else if (round) {
     body = round.matches
-      .map((m, idx) => renderMatchCard(m, idx + 1, isLastRound))
+      .map((m, idx) => renderMatchCard(m, idx + 1, true))
       .join("");
   } else {
     body = `<div class="empty-cell">Todavía no se ha pareado ninguna ronda.</div>`;
@@ -640,6 +663,12 @@ function renderStandings() {
     .join("");
 
   return `
+    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+      <button class="btn btn-ghost" data-action="copy-standings-names" title="Copia solo los nombres, en orden de posición">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copiar nombres</span>
+      </button>
+    </div>
     <div class="card">
       <table>
         <thead>
@@ -649,6 +678,37 @@ function renderStandings() {
       </table>
     </div>
   `;
+}
+
+// Copia solo los nombres del standings, uno por línea y en el mismo
+// orden (posición) en que se muestran, para pegarlos directo en la
+// parte de liga.
+async function copyStandingsNames(buttonEl) {
+  const rows = (state.data && state.data.standings) || [];
+  const text = rows.map((s) => s.name).join("\n");
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    // Algunos navegadores/bloqueadores no permiten navigator.clipboard
+    // (ej. sin HTTPS o sin foco): fallback con un textarea oculto.
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e2) { /* silencioso */ }
+    document.body.removeChild(ta);
+  }
+  if (buttonEl) {
+    const label = buttonEl.querySelector("span");
+    const original = label ? label.textContent : null;
+    if (label) label.textContent = "¡Copiado!";
+    setTimeout(() => {
+      if (label && original != null) label.textContent = original;
+    }, 1400);
+  }
 }
 
 /* ---------------- modales ---------------- */
@@ -755,6 +815,9 @@ function attachEvents() {
           state.activeRoundId = Number(el.dataset.id);
           state.manualMode = false;
           render();
+          break;
+        case "copy-standings-names":
+          await copyStandingsNames(el);
           break;
         case "delete-tournament":
           await deleteTournament(el.dataset.id);
