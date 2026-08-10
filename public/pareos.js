@@ -346,7 +346,7 @@ function render() {
 function renderHeader() {
   return `
     <div class="header">
-      <div class="brand">🀄 Pareos — Sistema Suizo</div>
+      <div class="brand">⚔️ Pareos — Sistema Suizo</div>
       <div style="display:flex; gap:10px; align-items:center;">
         <a href="/" class="btn btn-ghost" style="text-decoration:none;">Inicio</a>
         <a href="/ligas" class="btn btn-ghost" style="text-decoration:none;">Ligas Tecnocentro</a>
@@ -563,7 +563,10 @@ function renderMatchCard(m, tableNum, editable) {
         <div class="pairing-row">
           <div class="pairing-side ${isLoss ? "loss" : "win"}">
             <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
-            <div class="pairing-side-stats">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}%</div>
+            <div class="pairing-side-stats">
+              <span class="stat-full">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}%</span>
+              <span class="stat-compact">P ${a?.points ?? 0} · OP ${Math.round((a?.opPercent || 0) * 100)}%</span>
+            </div>
           </div>
           <div class="${isLoss ? "autolose-tag" : "autowin-tag"}">${isLoss ? "AUTOLOSE" : "AUTOWIN"}</div>
         </div>
@@ -589,12 +592,18 @@ function renderMatchCard(m, tableNum, editable) {
       <div class="pairing-row">
         <div class="pairing-side ${sideClass(aWin)}">
           <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
-          <div class="pairing-side-stats">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((a?.oopPercent || 0) * 100).toFixed(1)}%</div>
+          <div class="pairing-side-stats">
+            <span class="stat-full">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((a?.oopPercent || 0) * 100).toFixed(1)}%</span>
+            <span class="stat-compact">P ${a?.points ?? 0} · OP ${Math.round((a?.opPercent || 0) * 100)}% · OOP ${Math.round((a?.oopPercent || 0) * 100)}%</span>
+          </div>
         </div>
         <div class="pairing-vs">VS</div>
         <div class="pairing-side ${sideClass(bWin)}">
           <div class="pairing-side-name">${escapeHtml(b?.name || "?")}</div>
-          <div class="pairing-side-stats">Pts ${b?.points ?? 0} · OP% ${((b?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((b?.oopPercent || 0) * 100).toFixed(1)}%</div>
+          <div class="pairing-side-stats">
+            <span class="stat-full">Pts ${b?.points ?? 0} · OP% ${((b?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((b?.oopPercent || 0) * 100).toFixed(1)}%</span>
+            <span class="stat-compact">P ${b?.points ?? 0} · OP ${Math.round((b?.opPercent || 0) * 100)}% · OOP ${Math.round((b?.oopPercent || 0) * 100)}%</span>
+          </div>
         </div>
       </div>
       ${

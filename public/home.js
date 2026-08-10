@@ -108,10 +108,6 @@ function render() {
       <div class="brand">${trophySvg()} Ojama Programa Punto Com</div>
     </div>
     <div class="home-wrap">
-      <div class="home-intro">
-        <h1 class="home-title">Servicios</h1>
-        <p class="home-sub">Elige el sistema al que quieres entrar.</p>
-      </div>
       <div class="service-grid">
         ${SERVICES.map(serviceCard).join("")}
       </div>

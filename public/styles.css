@@ -163,11 +163,15 @@ select:focus { border-color: var(--teal); }
 .pairing-side.draw { background: #d4a53722; border-color: #d4a53755; }
 .pairing-side-name { font-weight: 600; font-size: 13.5px; }
 .pairing-side-stats { font-size: 11px; color: var(--ink-dim); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+.pairing-side-stats .stat-compact { display: none; }
 .pairing-vs { color: var(--ink-dim); font-size: 11px; font-weight: 700; padding: 0 2px; }
 .pairing-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .autowin-tag { background: #d4a53722; color: var(--gold); border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 700; }
 .autolose-tag { background: #c1594f22; color: var(--red); border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 700; }
-.round-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.round-tabs {
+  display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0; margin-top: -8px;
+}
 .round-tab-btn {
   background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
   font-size: 12.5px; font-weight: 600; color: var(--ink-dim); cursor: pointer;
@@ -268,6 +272,14 @@ select:focus { border-color: var(--teal); }
   input, textarea.paste-area { font-size: 16px; }
 
   .modal-box { padding: 16px; width: 100%; }
+
+  /* --------- pareos: apilar mesas y aligerar tarjetas --------- */
+  .pairing-card { padding: 10px 12px; border-color: transparent; border-bottom: 1px solid var(--line); border-radius: 6px; }
+  .pairing-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .pairing-side { width: 100%; }
+  .pairing-vs { align-self: center; padding: 2px 0; }
+  .pairing-side-stats .stat-full { display: none; }
+  .pairing-side-stats .stat-compact { display: inline; }
 }
 
 @media (max-width: 420px) {
