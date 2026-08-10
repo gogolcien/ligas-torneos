@@ -471,8 +471,8 @@ function renderRegistro() {
     `
         : ""
     }
-    <div class="card">
-      <table>
+    <div class="card card-fit">
+      <table class="table-auto">
         <thead>
           <tr>
             <th>Jugador</th><th>Estado</th><th class="text-right">Pts</th><th class="text-right">OP%</th><th class="text-right">OOP%</th>
@@ -678,8 +678,8 @@ function renderStandings() {
         <span>Copiar nombres</span>
       </button>
     </div>
-    <div class="card">
-      <table>
+    <div class="card card-fit">
+      <table class="table-auto">
         <thead>
           <tr><th>#</th><th>Jugador</th><th class="text-right">Pts</th><th class="text-right">OP%</th><th class="text-right">OOP%</th><th class="text-right">SL</th></tr>
         </thead>

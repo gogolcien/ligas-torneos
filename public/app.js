@@ -501,18 +501,18 @@ function renderTrendCell(s) {
 function renderStandings(league) {
   const rows = state.leagueData.standings || [];
   const canEdit = state.role === "admin";
-  if (!rows.length) return `<div class="card"><div class="empty-cell">Todavía no hay jugadores en esta liga.</div></div>`;
+  if (!rows.length) return `<div class="card card-fit"><div class="empty-cell">Todavía no hay jugadores en esta liga.</div></div>`;
   return `
-    <div class="card">
+    <div class="card card-fit">
       <div class="table-scroll">
-      <table>
+      <table class="table-auto">
         <thead>
           <tr>
             <th style="width:34px">#</th>
             <th>Jugador</th>
             <th class="col-hide-sm">Último deck</th>
-            <th class="text-right col-hide-xs">Participaciones</th>
-            <th class="text-right">Puntos</th>
+            <th class="text-right col-hide-xs" title="Participaciones">🏳️</th>
+            <th class="text-center">Puntos</th>
             <th class="text-right trend-cell"></th>
             ${!canEdit ? `<th style="width:36px"></th>` : ""}
             ${canEdit ? `<th style="width:36px"></th>` : ""}
@@ -527,7 +527,7 @@ function renderStandings(league) {
               <td style="font-weight:600">${escapeHtml(s.name)}</td>
               <td class="col-hide-sm" style="color:var(--ink-dim)">${escapeHtml(s.lastDeck) || "—"}</td>
               <td class="mono text-right col-hide-xs" style="color:var(--ink-dim)">${s.participations}</td>
-              <td class="mono text-right" style="font-weight:700;color:var(--teal);font-size:14.5px">${s.total}</td>
+              <td class="mono text-center" style="font-weight:700;color:var(--teal);font-size:14.5px">${s.total}</td>
               <td class="text-right trend-cell">${renderTrendCell(s)}</td>
               ${
                 !canEdit
@@ -865,14 +865,14 @@ function renderModal() {
       ? `<div class="empty-hint">Este jugador no tiene torneos registrados.</div>`
       : `
         <div class="table-scroll">
-        <table>
+        <table class="table-auto">
           <thead>
             <tr>
               <th>Torneo</th>
               <th>Fecha</th>
-              <th class="text-right">Posición</th>
-              <th class="text-right">Puntos</th>
-              <th class="text-right">Jugadores</th>
+              <th class="text-center">Posición</th>
+              <th class="text-center">Puntos</th>
+              <th class="text-right" title="Jugadores">👥</th>
             </tr>
           </thead>
           <tbody>
@@ -882,8 +882,8 @@ function renderModal() {
               <tr>
                 <td style="font-weight:600">${escapeHtml(r.tournamentName)}</td>
                 <td class="mono" style="color:var(--ink-dim)">${escapeHtml(r.date)}</td>
-                <td class="mono text-right">${r.position}° de ${r.totalPlayers}</td>
-                <td class="mono text-right" style="font-weight:700;color:var(--teal)">${r.points}</td>
+                <td class="mono text-center">${r.position}°</td>
+                <td class="mono text-center" style="font-weight:700;color:var(--teal)">${r.points}</td>
                 <td class="mono text-right" style="color:var(--ink-dim)">${r.totalPlayers}</td>
               </tr>`
               )
