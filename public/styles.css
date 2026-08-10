@@ -175,6 +175,7 @@ select:focus { border-color: var(--teal); }
   position: fixed; inset: 0; background: #00000099; display: flex; align-items: center; justify-content: center; z-index: 50;
 }
 .modal-box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; width: 380px; max-width: 90vw; }
+.modal-box-wide { width: 560px; }
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .modal-title { display: flex; align-items: center; gap: 8px; font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; }
 .modal-error { color: var(--red); font-size: 12px; margin-top: 6px; }
@@ -184,14 +185,17 @@ select:focus { border-color: var(--teal); }
 
 /* --------- sidebar plegable (encabezado siempre visible) --------- */
 .sidebar-toggle {
-  display: flex; align-items: center; gap: 6px; background: none; border: none; padding: 0;
-  color: var(--ink); cursor: default; text-align: left; flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 6px; background: none; border: none; padding: 4px 0;
+  color: var(--ink); cursor: pointer; text-align: left; flex: 1; min-width: 0;
 }
 .sidebar-current {
   color: var(--ink-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.chevron { flex-shrink: 0; transition: transform .15s ease; display: none; } /* solo se ve/gira en móvil */
-.sidebar-body { overflow: hidden; }
+.chevron { flex-shrink: 0; transition: transform .15s ease; display: block; }
+.chevron.open { transform: rotate(90deg); }
+.sidebar-body { overflow: hidden; max-height: 0; transition: max-height .18s ease; }
+.sidebar.collapsed .sidebar-body { max-height: 0; overflow: hidden; }
+.sidebar:not(.collapsed) .sidebar-body { max-height: 70vh; overflow-y: auto; margin-top: 10px; }
 
 /* --------- tablas con scroll horizontal en pantallas angostas --------- */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -245,12 +249,7 @@ select:focus { border-color: var(--teal); }
     padding: 10px 14px;
   }
   .sidebar-head { margin-bottom: 0; }
-  .sidebar-toggle { cursor: pointer; padding: 4px 0; }
-  .chevron { display: block; }
-  .chevron.open { transform: rotate(90deg); }
-  .sidebar-body { max-height: 0; transition: max-height .18s ease; }
-  .sidebar.collapsed .sidebar-body { max-height: 0; overflow: hidden; }
-  .sidebar:not(.collapsed) .sidebar-body { max-height: 60vh; overflow-y: auto; margin-top: 10px; }
+  .sidebar:not(.collapsed) .sidebar-body { max-height: 60vh; }
   .league-item { padding: 11px 12px; font-size: 14px; } /* objetivo táctil más grande */
 
   .main { padding: 16px 14px 28px; }

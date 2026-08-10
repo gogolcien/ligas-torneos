@@ -25,7 +25,8 @@ const state = {
   editingParticipants: false, // true = mostrando el editor de jugadores del torneo abierto
   epRows: [], // filas del editor de jugadores: { id, name, deck }
   formError: "",
-  sidebarOpen: window.matchMedia("(max-width: 768px)").matches ? false : true, // colapsado por defecto en móvil
+  sidebarOpen: false, // contraído por defecto (escritorio y móvil)
+  historyPlayerName: null, // jugador cuyo historial de puntos se está viendo
 };
 
 function isMobileViewport() {
@@ -513,6 +514,7 @@ function renderStandings(league) {
             <th class="text-right col-hide-xs">Participaciones</th>
             <th class="text-right">Puntos</th>
             <th class="text-right trend-cell"></th>
+            ${!canEdit ? `<th style="width:36px"></th>` : ""}
             ${canEdit ? `<th style="width:36px"></th>` : ""}
           </tr>
         </thead>
@@ -527,6 +529,11 @@ function renderStandings(league) {
               <td class="mono text-right col-hide-xs" style="color:var(--ink-dim)">${s.participations}</td>
               <td class="mono text-right" style="font-weight:700;color:var(--teal);font-size:14.5px">${s.total}</td>
               <td class="text-right trend-cell">${renderTrendCell(s)}</td>
+              ${
+                !canEdit
+                  ? `<td class="text-right"><button class="icon-btn" title="Ver historial de puntos" data-action="view-player-history" data-name="${escapeAttr(s.name)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></button></td>`
+                  : ""
+              }
               ${
                 canEdit
                   ? `<td class="text-right"><button class="icon-btn" title="Corregir nombre" data-action="open-rename" data-name="${escapeAttr(s.name)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></td>`
@@ -749,6 +756,26 @@ function renderAddTournament() {
   `;
 }
 
+function getPlayerHistory(name) {
+  const tournaments = (state.leagueData && state.leagueData.tournaments) || [];
+  const rows = [];
+  tournaments.forEach((t) => {
+    const idx = (t.participants || []).findIndex((p) => p.name === name);
+    if (idx === -1) return;
+    const p = t.participants[idx];
+    rows.push({
+      tournamentName: t.name,
+      date: t.date,
+      position: idx + 1,
+      points: p.points,
+      totalPlayers: t.participants.length,
+    });
+  });
+  // más reciente primero
+  rows.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  return rows;
+}
+
 function renderModal() {
   if (state.modal === "newLeague") {
     return modalShell(
@@ -832,13 +859,48 @@ function renderModal() {
     `
     );
   }
+  if (state.modal === "playerHistory") {
+    const rows = getPlayerHistory(state.historyPlayerName || "");
+    const body = !rows.length
+      ? `<div class="empty-hint">Este jugador no tiene torneos registrados.</div>`
+      : `
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Torneo</th>
+              <th>Fecha</th>
+              <th class="text-right">Posición</th>
+              <th class="text-right">Puntos</th>
+              <th class="text-right">Jugadores</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows
+              .map(
+                (r) => `
+              <tr>
+                <td style="font-weight:600">${escapeHtml(r.tournamentName)}</td>
+                <td class="mono" style="color:var(--ink-dim)">${escapeHtml(r.date)}</td>
+                <td class="mono text-right">${r.position}° de ${r.totalPlayers}</td>
+                <td class="mono text-right" style="font-weight:700;color:var(--teal)">${r.points}</td>
+                <td class="mono text-right" style="color:var(--ink-dim)">${r.totalPlayers}</td>
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>
+        </div>
+      `;
+    return modalShell(`Historial de puntos · ${escapeHtml(state.historyPlayerName || "")}`, body, "modal-box-wide");
+  }
   return "";
 }
 
-function modalShell(title, body) {
+function modalShell(title, body, extraClass) {
   return `
     <div class="modal-overlay" data-action="overlay-close">
-      <div class="modal-box" data-stop>
+      <div class="modal-box ${extraClass || ""}" data-stop>
         <div class="modal-head">
           <div class="modal-title">${escapeHtml(title)}</div>
           <button class="icon-btn" data-action="close-modal">✕</button>
@@ -971,6 +1033,11 @@ function attachEvents() {
           break;
         case "open-rename":
           openRename(el.dataset.name);
+          break;
+        case "view-player-history":
+          state.historyPlayerName = el.dataset.name;
+          state.modal = "playerHistory";
+          render();
           break;
         case "open-edit-tournament":
           openEditTournament(el.dataset.id);

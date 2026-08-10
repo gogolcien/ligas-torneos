@@ -19,6 +19,7 @@ const state = {
   manualMode: false,
   manualPairs: [], // [{ playerAId, playerBId }] mientras se edita el pareo manual
   renamePlayerId: null,
+  sidebarOpen: false, // contraído por defecto
 };
 
 function uid() {
@@ -377,13 +378,21 @@ function renderSidebar() {
     )
     .join("");
 
+  const isOpen = state.sidebarOpen !== false;
+  const selected = state.tournaments.find((t) => t.id === state.selectedId);
   return `
-    <div class="sidebar">
+    <div class="sidebar ${isOpen ? "" : "collapsed"}">
       <div class="sidebar-head">
-        <div class="sidebar-title">Torneos</div>
+        <button class="sidebar-toggle" type="button" data-action="toggle-sidebar" aria-expanded="${isOpen}">
+          <svg class="chevron ${isOpen ? "open" : ""}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+          <span class="sidebar-title">Torneos</span>
+          ${!isOpen && selected ? `<span class="sidebar-current mono">· ${escapeHtml(selected.name)}</span>` : ""}
+        </button>
         ${state.role === "admin" ? `<button class="icon-btn" data-action="open-new-tournament" title="Nuevo torneo">➕</button>` : ""}
       </div>
-      ${state.tournaments.length ? items : `<div class="empty-hint">Todavía no hay torneos de pareos. ${state.role === "admin" ? "Crea uno con el botón +." : "Activa el modo administrador para crear uno."}</div>`}
+      <div class="sidebar-body">
+        ${state.tournaments.length ? items : `<div class="empty-hint">Todavía no hay torneos de pareos. ${state.role === "admin" ? "Crea uno con el botón +." : "Activa el modo administrador para crear uno."}</div>`}
+      </div>
     </div>
   `;
 }
@@ -805,6 +814,10 @@ function attachEvents() {
           break;
         case "select-tournament":
           await selectTournament(el.dataset.id);
+          break;
+        case "toggle-sidebar":
+          state.sidebarOpen = !state.sidebarOpen;
+          render();
           break;
         case "select-tab":
           state.tab = el.dataset.tab;
