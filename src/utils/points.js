@@ -56,12 +56,13 @@ function computeStandings(leagueData, topN) {
     const scores = (data.results || []).map((r) => r.points).sort((a, b) => b - a);
     const top = scores.slice(0, topN);
     const total = top.reduce((s, v) => s + v, 0);
-    const lastResult = data.results && data.results.length ? data.results[data.results.length - 1] : null;
+    const results = data.results || [];
+    const lastDeckResult = [...results].reverse().find((r) => r.deck);
     return {
       name,
       total,
-      participations: data.results ? data.results.length : 0,
-      lastDeck: lastResult ? lastResult.deck : "",
+      participations: results.length,
+      lastDeck: lastDeckResult ? lastDeckResult.deck : "",
     };
   });
   rows.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
