@@ -27,6 +27,7 @@ const state = {
   formError: "",
   sidebarOpen: false, // contraído por defecto (escritorio y móvil)
   historyPlayerName: null, // jugador cuyo historial de puntos se está viendo
+  historySort: "date", // "date" (por torneo, por defecto) | "points" (de más a menos puntos)
 };
 
 function isMobileViewport() {
@@ -865,6 +866,9 @@ function renderModal() {
   }
   if (state.modal === "playerHistory") {
     const rows = getPlayerHistory(state.historyPlayerName || "");
+    if (state.historySort === "points") {
+      rows.sort((a, b) => b.points - a.points || (b.date || "").localeCompare(a.date || ""));
+    }
     const body = !rows.length
       ? `<div class="empty-hint">Este jugador no tiene torneos registrados.</div>`
       : `
@@ -875,7 +879,9 @@ function renderModal() {
               <th>Torneo</th>
               <th>Fecha</th>
               <th class="text-center">Posición</th>
-              <th class="text-center">Puntos</th>
+              <th class="text-center" data-action="toggle-history-sort" title="Ordenar por puntos" style="cursor:pointer;user-select:none">
+                Puntos ${state.historySort === "points" ? "↓" : ""}
+              </th>
               <th class="text-right" title="Jugadores">👥</th>
             </tr>
           </thead>
@@ -1040,7 +1046,12 @@ function attachEvents() {
           break;
         case "view-player-history":
           state.historyPlayerName = el.dataset.name;
+          state.historySort = "date";
           state.modal = "playerHistory";
+          render();
+          break;
+        case "toggle-history-sort":
+          state.historySort = state.historySort === "points" ? "date" : "points";
           render();
           break;
         case "open-edit-tournament":
