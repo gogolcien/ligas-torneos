@@ -401,7 +401,7 @@ function shieldSvg(on) {
 function renderHeader() {
   return `
     <div class="header">
-      <div class="brand">${trophySvg()} Ligas Tecnocentro</div>
+      <div class="brand"><img src="/favicon-32x32.png" alt="Ojama" width="24" height="24" style="border-radius:6px;vertical-align:middle" /> Ligas Tecnocentro</div>
       <div style="display:flex; gap:10px; align-items:center;">
         <a href="/" class="btn btn-ghost" style="text-decoration:none;">Inicio</a>
         <a href="/pareos" class="btn btn-ghost" style="text-decoration:none;">Pareos</a>
@@ -557,7 +557,7 @@ function renderTournaments() {
     <div class="card card-fit">
       <div class="table-scroll">
       <table class="table-auto">
-        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-right col-hide-xs">Participantes</th><th>Ganador</th><th></th></tr></thead>
+        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-center col-hide-xs" title="Participantes">👥</th><th>Ganador</th><th></th></tr></thead>
         <tbody>
           ${list
             .map(
@@ -565,8 +565,11 @@ function renderTournaments() {
             <tr class="clickable" data-action="open-tournament" data-id="${t.id}">
               <td style="font-weight:600">${escapeHtml(t.name)}</td>
               <td class="mono" style="color:var(--ink-dim)">${t.date}</td>
-              <td class="mono text-right col-hide-xs">${t.participants.length}</td>
-              <td style="color:var(--gold);font-weight:600">${escapeHtml(t.participants[0]?.name || "—")}</td>
+              <td class="mono text-center col-hide-xs">${t.participants.length}</td>
+              <td>
+                <span style="color:var(--gold);font-weight:600">${escapeHtml(t.participants[0]?.name || "—")}</span>
+                ${t.participants[0]?.deck ? `<span class="mono" style="color:var(--teal);font-weight:700;margin-left:6px">${escapeHtml(t.participants[0].deck)}</span>` : ""}
+              </td>
               <td class="text-right" style="color:var(--ink-dim)">›</td>
             </tr>`
             )

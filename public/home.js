@@ -105,7 +105,7 @@ function render() {
   const app = document.getElementById("app");
   app.innerHTML = `
     <div class="header">
-      <div class="brand">${trophySvg()} Ojama Programa Punto Com</div>
+      <div class="brand"><img src="/favicon-32x32.png" alt="Ojama" width="24" height="24" style="border-radius:6px;vertical-align:middle" /> Ojama Programa Punto Com</div>
     </div>
     <div class="home-wrap">
       <div class="service-grid">

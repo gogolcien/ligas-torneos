@@ -154,7 +154,7 @@ select {
 select:focus { border-color: var(--teal); }
 
 /* --------- pareos: mesas y resultados --------- */
-.pairing-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.pairing-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; width: fit-content; max-width: 100%; }
 .pairing-table-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-dim); margin-bottom: 8px; }
 .pairing-row { display: flex; align-items: center; gap: 10px; }
 .pairing-side { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); }

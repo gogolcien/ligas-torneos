@@ -346,7 +346,7 @@ function render() {
 function renderHeader() {
   return `
     <div class="header">
-      <div class="brand">⚔️ Pareos — Sistema Suizo</div>
+      <div class="brand"><img src="/favicon-32x32.png" alt="Ojama" width="24" height="24" style="border-radius:6px;vertical-align:middle" /> Pareos — Sistema Suizo</div>
       <div style="display:flex; gap:10px; align-items:center;">
         <a href="/" class="btn btn-ghost" style="text-decoration:none;">Inicio</a>
         <a href="/ligas" class="btn btn-ghost" style="text-decoration:none;">Ligas Tecnocentro</a>
@@ -436,9 +436,6 @@ function renderRegistro() {
       <tr class="${p.enabled ? "" : "disabled-row"}">
         <td>${escapeHtml(p.name)}</td>
         <td>${p.enabled ? '<span class="badge badge-teal">Habilitado</span>' : '<span class="badge badge-dim">Inhabilitado</span>'}</td>
-        <td class="text-right mono">${p.points}</td>
-        <td class="text-right mono">${(p.opPercent * 100).toFixed(1)}%</td>
-        <td class="text-right mono">${(p.oopPercent * 100).toFixed(1)}%</td>
         ${
           state.role === "admin"
             ? `<td class="text-right">
@@ -475,12 +472,12 @@ function renderRegistro() {
       <table class="table-auto">
         <thead>
           <tr>
-            <th>Jugador</th><th>Estado</th><th class="text-right">Pts</th><th class="text-right">OP%</th><th class="text-right">OOP%</th>
+            <th>Jugador</th><th>Estado</th>
             ${state.role === "admin" ? `<th class="text-right">Acciones</th>` : ""}
           </tr>
         </thead>
         <tbody>
-          ${rows || `<tr><td colspan="6" class="empty-cell">Aún no hay jugadores registrados.</td></tr>`}
+          ${rows || `<tr><td colspan="${state.role === "admin" ? 3 : 2}" class="empty-cell">Aún no hay jugadores registrados.</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -671,10 +668,10 @@ function renderStandings() {
       <tr class="${s.enabled ? "" : "disabled-row"}">
         <td class="mono">${s.rank}</td>
         <td>${escapeHtml(s.name)}</td>
-        <td class="text-right mono">${s.points}</td>
+        <td class="text-center mono">${s.points}</td>
         <td class="text-right mono">${(s.opPercent * 100).toFixed(1)}%</td>
         <td class="text-right mono">${(s.oopPercent * 100).toFixed(1)}%</td>
-        <td class="text-right mono">${s.sl}</td>
+        <td class="text-center mono">${s.sl}</td>
       </tr>
     `
     )
@@ -690,7 +687,7 @@ function renderStandings() {
     <div class="card card-fit">
       <table class="table-auto">
         <thead>
-          <tr><th>#</th><th>Jugador</th><th class="text-right">Pts</th><th class="text-right">OP%</th><th class="text-right">OOP%</th><th class="text-right">SL</th></tr>
+          <tr><th>#</th><th>Jugador</th><th class="text-center">Pts</th><th class="text-right">OP%</th><th class="text-right">OOP%</th><th class="text-center">SL</th></tr>
         </thead>
         <tbody>${rows || `<tr><td colspan="6" class="empty-cell">Sin datos todavía.</td></tr>`}</tbody>
       </table>
