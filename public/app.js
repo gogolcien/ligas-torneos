@@ -552,12 +552,12 @@ function renderStandings(league) {
 function renderTournaments() {
   if (state.detailTournamentId) return renderTournamentDetail();
   const list = [...(state.leagueData.tournaments || [])].reverse();
-  if (!list.length) return `<div class="card"><div class="empty-cell">Aún no se han registrado torneos.</div></div>`;
+  if (!list.length) return `<div class="card card-fit"><div class="empty-cell">Aún no se han registrado torneos.</div></div>`;
   return `
-    <div class="card">
+    <div class="card card-fit">
       <div class="table-scroll">
-      <table>
-        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-right col-hide-xs">Participantes</th><th></th></tr></thead>
+      <table class="table-auto">
+        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-right col-hide-xs">Participantes</th><th>Ganador</th><th></th></tr></thead>
         <tbody>
           ${list
             .map(
@@ -566,6 +566,7 @@ function renderTournaments() {
               <td style="font-weight:600">${escapeHtml(t.name)}</td>
               <td class="mono" style="color:var(--ink-dim)">${t.date}</td>
               <td class="mono text-right col-hide-xs">${t.participants.length}</td>
+              <td style="color:var(--gold);font-weight:600">${escapeHtml(t.participants[0]?.name || "—")}</td>
               <td class="text-right" style="color:var(--ink-dim)">›</td>
             </tr>`
             )
@@ -603,10 +604,10 @@ function renderTournamentDetail() {
 
 function renderParticipantsTable(t) {
   return `
-    <div class="card">
+    <div class="card card-fit">
       <div class="table-scroll">
-      <table>
-        <thead><tr><th style="width:40px">Pos.</th><th>Jugador</th><th class="col-hide-sm">Deck</th><th class="text-right">Puntos</th><th></th></tr></thead>
+      <table class="table-auto">
+        <thead><tr><th style="width:40px">Pos.</th><th>Jugador</th><th class="col-hide-sm">Deck</th><th class="text-center">Puntos</th><th></th></tr></thead>
         <tbody>
           ${t.participants
             .map(
@@ -615,7 +616,7 @@ function renderParticipantsTable(t) {
               <td class="mono" style="color:${p.position === 0 ? "var(--gold)" : "var(--ink-dim)"};font-weight:600">${p.position}</td>
               <td style="font-weight:600">${escapeHtml(p.name)}</td>
               <td class="col-hide-sm" style="color:var(--ink-dim)">${escapeHtml(p.deck) || "—"}</td>
-              <td class="mono text-right" style="font-weight:700;color:var(--teal)">+${p.points}</td>
+              <td class="mono text-center" style="font-weight:700;color:var(--teal)">+${p.points}</td>
               <td class="text-right">${p.isNew ? `<span class="badge badge-gold">Nuevo</span>` : ""}</td>
             </tr>`
             )
