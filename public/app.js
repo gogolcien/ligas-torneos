@@ -557,7 +557,7 @@ function renderTournaments() {
     <div class="card card-fit">
       <div class="table-scroll">
       <table class="table-auto">
-        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-center col-hide-xs" title="Participantes">👥</th><th>Ganador</th><th></th></tr></thead>
+        <thead><tr><th>Torneo</th><th>Fecha</th><th class="text-center col-hide-xs" title="Participantes">👥</th><th>Ganador</th><th>Deck</th><th></th></tr></thead>
         <tbody>
           ${list
             .map(
@@ -568,8 +568,8 @@ function renderTournaments() {
               <td class="mono text-center col-hide-xs">${t.participants.length}</td>
               <td>
                 <span style="color:var(--gold);font-weight:600">${escapeHtml(t.participants[0]?.name || "—")}</span>
-                ${t.participants[0]?.deck ? `<span class="mono" style="color:var(--teal);font-weight:700;margin-left:6px">${escapeHtml(t.participants[0].deck)}</span>` : ""}
               </td>
+              <td class="mono" style="color:var(--teal);font-weight:700">${escapeHtml(t.participants[0]?.deck || "—")}</td>
               <td class="text-right" style="color:var(--ink-dim)">›</td>
             </tr>`
             )
