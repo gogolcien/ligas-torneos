@@ -99,6 +99,17 @@ async function updateLeagueTopN(id, topN) {
   return res.rows[0];
 }
 
+// Actualiza el nombre y/o el topN de una liga. `name` es opcional: si no
+// se envía, se conserva el nombre actual (COALESCE evita sobreescribirlo).
+async function updateLeagueSettings(id, { name, topN }) {
+  const res = await pool.query(
+    'UPDATE leagues SET name = COALESCE($2, name), top_n = $3 WHERE id = $1 RETURNING id, name, top_n AS "topN"',
+    [id, name || null, topN]
+  );
+  if (res.rows.length === 0) return null;
+  return res.rows[0];
+}
+
 // Reemplaza por completo los torneos (y por lo tanto los participantes)
 // de una liga con los que vengan en leagueData.tournaments. `players` no
 // se guarda: se recalcula siempre a partir de los torneos al leer.
@@ -159,5 +170,6 @@ module.exports = {
   createLeague,
   getLeague,
   updateLeagueTopN,
+  updateLeagueSettings,
   saveLeague,
 };

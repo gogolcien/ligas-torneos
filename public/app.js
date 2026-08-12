@@ -197,9 +197,10 @@ async function createLeague(name, topN) {
   }
 }
 
-async function saveTopN(topN) {
+async function saveLeagueSettings(name, topN) {
   try {
-    await api(`/api/leagues/${state.selectedId}`, { method: "PUT", body: JSON.stringify({ topN }) });
+    if (!name.trim()) throw new Error("El nombre de la liga no puede quedar vacío.");
+    await api(`/api/leagues/${state.selectedId}`, { method: "PUT", body: JSON.stringify({ name, topN }) });
     state.modal = null;
     await loadLeagues();
     await loadSelectedLeague();
@@ -804,7 +805,9 @@ function renderModal() {
     return modalShell(
       "Ajustes de la liga",
       `
-      <label class="field-label">Mostrar los mejores N resultados por jugador</label>
+      <label class="field-label">Nombre de la liga</label>
+      <input id="m-league-name" value="${escapeAttr(league ? league.name : "")}" />
+      <label class="field-label" style="margin-top:10px">Mostrar los mejores N resultados por jugador</label>
       <input id="m-topn2" type="number" min="1" value="${league ? league.topN : 5}" />
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
       <div class="modal-actions">
@@ -1072,8 +1075,9 @@ function attachEvents() {
           break;
         }
         case "submit-settings": {
+          const name = document.getElementById("m-league-name").value;
           const topN = document.getElementById("m-topn2").value;
-          await saveTopN(topN);
+          await saveLeagueSettings(name, topN);
           break;
         }
         case "submit-pin": {

@@ -34,10 +34,16 @@ router.get("/:id", asyncHandler(async (req, res) => {
   res.json({ ...league, standings });
 }));
 
-// PUT /api/leagues/:id -> actualizar topN (admin)
+// PUT /api/leagues/:id -> actualizar nombre y/o topN (admin)
 router.put("/:id", requireAdmin, asyncHandler(async (req, res) => {
-  const { topN } = req.body || {};
-  const league = await store.updateLeagueTopN(req.params.id, Math.max(1, Number(topN) || 5));
+  const { name, topN } = req.body || {};
+  if (name !== undefined && !String(name).trim()) {
+    return res.status(400).json({ error: "El nombre no puede quedar vacío." });
+  }
+  const league = await store.updateLeagueSettings(req.params.id, {
+    name: name !== undefined ? String(name).trim() : undefined,
+    topN: Math.max(1, Number(topN) || 5),
+  });
   if (!league) return res.status(404).json({ error: "Liga no encontrada." });
   res.json({ id: league.id, name: league.name, topN: league.topN });
 }));
