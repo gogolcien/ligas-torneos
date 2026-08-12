@@ -525,7 +525,7 @@ function renderPareos() {
     ${
       state.role === "admin"
         ? `
-      <div class="pairing-actions" style="margin-bottom:16px;">
+      <div class="toolbar-actions" style="margin-bottom:16px;">
         <button class="btn btn-gold" data-action="pair-next-round" ${roundPending || activeCount < 2 ? "disabled" : ""}>
           ${lastRound ? "Parear siguiente ronda" : "Parear Ronda 1"}
         </button>
@@ -587,7 +587,11 @@ function renderMatchCard(m, tableNum, editable) {
     <div class="pairing-card">
       <div class="pairing-table-num">Mesa ${tableNum}</div>
       <div class="pairing-row">
-        <div class="pairing-side ${sideClass(aWin)}">
+        <div class="pairing-side ${sideClass(aWin)} ${editable && state.role === "admin" ? "clickable" : ""}" ${
+          editable && state.role === "admin"
+            ? `data-action="set-result" data-id="${m.id}" data-result="a_win" title="Marcar a ${escapeAttr(a?.name || "A")} como ganador"`
+            : ""
+        }>
           <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
           <div class="pairing-side-stats">
             <span class="stat-full">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((a?.oopPercent || 0) * 100).toFixed(1)}%</span>
@@ -595,7 +599,11 @@ function renderMatchCard(m, tableNum, editable) {
           </div>
         </div>
         <div class="pairing-vs">VS</div>
-        <div class="pairing-side ${sideClass(bWin)}">
+        <div class="pairing-side ${sideClass(bWin)} ${editable && state.role === "admin" ? "clickable" : ""}" ${
+          editable && state.role === "admin"
+            ? `data-action="set-result" data-id="${m.id}" data-result="b_win" title="Marcar a ${escapeAttr(b?.name || "B")} como ganador"`
+            : ""
+        }>
           <div class="pairing-side-name">${escapeHtml(b?.name || "?")}</div>
           <div class="pairing-side-stats">
             <span class="stat-full">Pts ${b?.points ?? 0} · OP% ${((b?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((b?.oopPercent || 0) * 100).toFixed(1)}%</span>
@@ -607,9 +615,8 @@ function renderMatchCard(m, tableNum, editable) {
         editable && state.role === "admin"
           ? `
         <div class="pairing-actions">
-          <button class="btn ${aWin ? "btn-teal" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="a_win">Gana ${escapeHtml(a?.name || "A")}</button>
-          <button class="btn ${bWin ? "btn-teal" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="b_win">Gana ${escapeHtml(b?.name || "B")}</button>
           <button class="btn ${draw ? "btn-gold" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="draw">Empate</button>
+          <div class="pairing-actions-spacer"></div>
           <button class="btn ${doubleLoss ? "btn-danger" : "btn-ghost"}" data-action="set-result" data-id="${m.id}" data-result="double_loss">Ambos pierden</button>
         </div>
       `
