@@ -29,6 +29,15 @@ const SERVICES = [
     accent: "teal",
     icon: pareosIllustration(),
   },
+  {
+    slug: "ordenar",
+    name: "Ordenar Jugadores",
+    description:
+      "Captura una lista de nombres y asígnales su posición final con un clic por jugador, en el orden en que van quedando, para generar el resultado ordenado.",
+    href: "/ordenar",
+    accent: "gold",
+    icon: orderIllustration(),
+  },
 ];
 
 function leaguesIllustration() {
@@ -90,6 +99,33 @@ function pareosIllustration() {
     <path d="M360 40v-15h-20" fill="none" stroke="var(--line)" stroke-width="2"/>
     <path d="M40 195v15h20" fill="none" stroke="var(--line)" stroke-width="2"/>
     <path d="M360 195v15h-20" fill="none" stroke="var(--line)" stroke-width="2"/>
+  </svg>`;
+}
+
+function orderIllustration() {
+  return `
+  <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustración de lista numerada de jugadores">
+    <rect x="0" y="0" width="400" height="220" fill="var(--panel2)"/>
+    <!-- tarjeta con lista -->
+    <rect x="70" y="35" width="260" height="150" rx="10" fill="var(--panel)" stroke="var(--line)" stroke-width="2"/>
+    <!-- filas -->
+    <g font-family="IBM Plex Mono, monospace" font-weight="700">
+      <circle cx="100" cy="65" r="12" fill="var(--gold)"/>
+      <text x="100" y="70" text-anchor="middle" font-size="13" fill="#1b1204">1</text>
+      <rect x="122" y="58" width="150" height="14" rx="4" fill="var(--line)"/>
+
+      <circle cx="100" cy="103" r="12" fill="none" stroke="var(--ink-dim)" stroke-width="2"/>
+      <text x="100" y="108" text-anchor="middle" font-size="13" fill="var(--ink-dim)">2</text>
+      <rect x="122" y="96" width="130" height="14" rx="4" fill="var(--line)"/>
+
+      <circle cx="100" cy="141" r="12" fill="none" stroke="var(--ink-dim)" stroke-width="2"/>
+      <text x="100" y="146" text-anchor="middle" font-size="13" fill="var(--ink-dim)">3</text>
+      <rect x="122" y="134" width="140" height="14" rx="4" fill="var(--line)"/>
+    </g>
+    <!-- flecha/cursor de asignación -->
+    <g transform="translate(292,150)">
+      <path d="M0 0 L0 22 L6 17 L10 25 L14 23 L10 15 L18 15 Z" fill="var(--teal)"/>
+    </g>
   </svg>`;
 }
 

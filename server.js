@@ -31,6 +31,7 @@ async function main() {
   const services = [
     { slug: "ligas", file: "ligas.html" },
     { slug: "pareos", file: "pareos.html" },
+    { slug: "ordenar", file: "ordenar.html" },
   ];
   services.forEach(({ slug, file }) => {
     app.get([`/${slug}`, `/${slug}/*`], (req, res) => {

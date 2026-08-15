@@ -250,6 +250,60 @@ select:focus { border-color: var(--teal); }
   .home-title { font-size: 25px; }
 }
 
+/* --------- ordenar jugadores --------- */
+.order-wrap { max-width: 1180px; margin: 0 auto; padding: 26px; }
+.order-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; align-items: start; }
+.order-col-head { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 16px 0; }
+.order-col-title { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; margin: 0; }
+.order-col-hint { font-size: 12px; color: var(--ink-dim); padding: 4px 16px 12px; line-height: 1.5; }
+.order-col-body { padding: 0 16px 16px; }
+
+.order-textarea {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 11px; color: var(--ink); outline: none; width: 100%; min-height: 380px;
+  resize: vertical; line-height: 1.6;
+}
+.order-textarea:focus { border-color: var(--teal); }
+.order-textarea.has-error { border-color: var(--red); background: #c1594f11; }
+
+.order-alert { color: var(--red); font-size: 12px; font-weight: 600; margin-top: 8px; min-height: 16px; line-height: 1.5; }
+
+.order-list { max-height: 460px; overflow-y: auto; margin-bottom: 4px; }
+.order-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid #2a303c22;
+}
+.order-item-name { font-size: 13.5px; word-break: break-word; }
+.order-item-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+.assign-pos-btn {
+  font-size: 12px; font-weight: 600; border-radius: 999px; padding: 6px 12px; white-space: nowrap;
+  background: var(--gold); color: #1b1204; border: none; cursor: pointer;
+}
+.assign-pos-btn:hover { opacity: .85; }
+
+.pos-badge { background: #d4a53722; color: var(--gold); font-weight: 700; padding: 5px 10px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+
+.order-empty { color: var(--ink-dim); font-size: 13px; font-style: italic; padding: 4px 0; }
+
+.order-ranked-list { list-style: none; margin: 0; padding: 0; counter-reset: none; }
+.order-ranked-item {
+  display: flex; align-items: baseline; gap: 10px; padding: 10px 0; border-bottom: 1px solid #2a303c22; font-size: 14px;
+}
+.order-ranked-item:last-child { border-bottom: none; }
+.order-ranked-pos { font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--gold); min-width: 28px; text-align: right; }
+.order-ranked-pos.pos-1 { color: var(--gold); }
+.order-ranked-name { font-weight: 600; }
+
+@media (max-width: 900px) {
+  .order-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .order-wrap { padding: 16px 14px 30px; }
+  .order-textarea { min-height: 220px; }
+  .order-list { max-height: 320px; }
+}
+
 /* ==================================================================
    RESPONSIVE — móvil
    ================================================================== */
