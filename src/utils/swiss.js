@@ -22,6 +22,13 @@ function shuffle(arr) {
 // Para cada jugador arma la lista de rondas que ha jugado:
 // { roundNumber, opponentId (null = AUTOWIN/AUTOLOSE), outcome }
 // outcome: 'win' | 'loss' | 'double_loss' | 'draw'
+// Una ronda solo se toma en cuenta si TODOS sus resultados ya están
+// capturados (los AUTOWIN/AUTOLOSE ya nacen resueltos). Mientras falte
+// aunque sea un resultado, la ronda completa se ignora en standings.
+function isRoundFullyResolved(round) {
+  return round.matches.every((m) => m.playerBId == null || m.result != null);
+}
+
 function buildPlayerRounds(tournament) {
   const roundsByPlayer = {};
   tournament.players.forEach((p) => {
@@ -29,6 +36,8 @@ function buildPlayerRounds(tournament) {
   });
 
   tournament.rounds.forEach((round) => {
+    if (!isRoundFullyResolved(round)) return; // ronda incompleta: no cuenta todavía
+
     round.matches.forEach((m) => {
       if (!m.result) return; // resultado pendiente, no cuenta todavía
 
@@ -188,14 +197,27 @@ function computeStandings(tournament) {
 /* ---------------- Generación de pareos ---------------- */
 
 // Elige quién recibe el AUTOWIN cuando el número de jugadores activos
-// es impar: el de menor puntaje que aún no haya recibido uno.
-function pickByePlayer(pool, stats) {
-  const withoutBye = pool.filter((p) => {
-    const rounds = stats.roundsByPlayer[p.id] || [];
-    return !rounds.some((r) => r.opponentId == null);
-  });
-  const candidates = withoutBye.length ? withoutBye : pool;
-  return [...candidates].sort((a, b) => (stats.points[a.id] || 0) - (stats.points[b.id] || 0))[0];
+// es impar (a partir de la ronda 2): el último lugar en la tabla de
+// posiciones (con desempates OP%/OOP%/SL) que todavía no tenga un
+// AUTOWIN. Si ya lo tuvo, se sube al siguiente peor lugar, y así
+// sucesivamente. Si absolutamente todos ya tuvieron uno, se le da de
+// todas formas al último lugar (mejor repetir que dejar a alguien sin
+// pareo).
+function pickByePlayer(tournament, pool, stats) {
+  const poolIds = new Set(pool.map((p) => p.id));
+  const standings = computeStandings(tournament).filter((r) => poolIds.has(r.id));
+
+  for (let i = standings.length - 1; i >= 0; i--) {
+    const row = standings[i];
+    const rounds = stats.roundsByPlayer[row.id] || [];
+    const hadAutowin = rounds.some((r) => r.opponentId == null && r.outcome === "win");
+    if (!hadAutowin) {
+      return pool.find((p) => p.id === row.id);
+    }
+  }
+
+  const last = standings[standings.length - 1];
+  return pool.find((p) => p.id === last.id);
 }
 
 // Devuelve [{ playerAId, playerBId }] para la siguiente ronda.
@@ -223,7 +245,7 @@ function generatePairings(tournament) {
   let byePlayer = null;
 
   if (pool.length % 2 === 1) {
-    byePlayer = pickByePlayer(pool, stats);
+    byePlayer = pickByePlayer(tournament, pool, stats);
     pool = pool.filter((p) => p.id !== byePlayer.id);
   }
 
@@ -287,4 +309,4 @@ function generatePairings(tournament) {
   return pairs;
 }
 
-module.exports = { computeStandings, computeStats, generatePairings };
+module.exports = { computeStandings, computeStats, generatePairings, isRoundFullyResolved };

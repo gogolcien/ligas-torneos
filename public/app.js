@@ -28,7 +28,13 @@ const state = {
   sidebarOpen: false, // contraído por defecto (escritorio y móvil)
   historyPlayerName: null, // jugador cuyo historial de puntos se está viendo
   historySort: "date", // "date" (por torneo, por defecto) | "points" (de más a menos puntos)
+  busy: null, // identificador de la acción de guardado/eliminación en curso (o null)
 };
+
+// true si el identificador de acción dado está actualmente en curso
+function isBusy(id) {
+  return state.busy === id;
+}
 
 function isMobileViewport() {
   return window.matchMedia("(max-width: 768px)").matches;
@@ -163,6 +169,8 @@ function openAdminFlow() {
 }
 
 async function confirmPin(pin) {
+  state.busy = "submit-pin";
+  render();
   try {
     if (state.pinMode === "setup") {
       if (!pin || pin.trim().length < 4) throw new Error("Usa al menos 4 caracteres.");
@@ -177,15 +185,18 @@ async function confirmPin(pin) {
     }
     state.role = "admin";
     state.modal = null;
-    render();
   } catch (e) {
     state.formError = e.message;
+  } finally {
+    state.busy = null;
     render();
   }
 }
 
 async function createLeague(name, topN) {
   if (!name.trim()) return;
+  state.busy = "submit-new-league";
+  render();
   try {
     const league = await api("/api/leagues", { method: "POST", body: JSON.stringify({ name, topN }) });
     state.modal = null;
@@ -193,20 +204,25 @@ async function createLeague(name, topN) {
     await selectLeague(league.id);
   } catch (e) {
     state.formError = e.message;
+  } finally {
+    state.busy = null;
     render();
   }
 }
 
 async function saveLeagueSettings(name, topN) {
+  state.busy = "submit-settings";
+  render();
   try {
     if (!name.trim()) throw new Error("El nombre de la liga no puede quedar vacío.");
     await api(`/api/leagues/${state.selectedId}`, { method: "PUT", body: JSON.stringify({ name, topN }) });
     state.modal = null;
     await loadLeagues();
     await loadSelectedLeague();
-    render();
   } catch (e) {
     state.formError = e.message;
+  } finally {
+    state.busy = null;
     render();
   }
 }
@@ -219,6 +235,8 @@ function openRename(name) {
 }
 
 async function submitRename(newName) {
+  state.busy = "submit-rename";
+  render();
   try {
     if (!newName.trim()) throw new Error("Escribe el nombre corregido.");
     await api(`/api/leagues/${state.selectedId}/players/rename`, {
@@ -228,9 +246,10 @@ async function submitRename(newName) {
     state.modal = null;
     state.renameOldName = null;
     await loadSelectedLeague();
-    render();
   } catch (e) {
     state.formError = e.message;
+  } finally {
+    state.busy = null;
     render();
   }
 }
@@ -247,6 +266,8 @@ function openEditTournament(id) {
 }
 
 async function submitEditTournament(name, date) {
+  state.busy = "submit-edit-tournament";
+  render();
   try {
     if (!name.trim()) throw new Error("El nombre del torneo no puede quedar vacío.");
     await api(`/api/leagues/${state.selectedId}/tournaments/${state.editTournamentId}`, {
@@ -256,9 +277,10 @@ async function submitEditTournament(name, date) {
     state.modal = null;
     state.editTournamentId = null;
     await loadSelectedLeague();
-    render();
   } catch (e) {
     state.formError = e.message;
+  } finally {
+    state.busy = null;
     render();
   }
 }
@@ -268,13 +290,17 @@ async function deleteTournament(id) {
   if (!t) return;
   const ok = window.confirm(`¿Eliminar el torneo "${t.name}"? Esta acción no se puede deshacer.`);
   if (!ok) return;
+  state.busy = `delete-tournament:${id}`;
+  render();
   try {
     await api(`/api/leagues/${state.selectedId}/tournaments/${id}`, { method: "DELETE" });
     state.detailTournamentId = null;
     await loadSelectedLeague();
-    render();
   } catch (e) {
     alert(e.message);
+  } finally {
+    state.busy = null;
+    render();
   }
 }
 
@@ -312,6 +338,8 @@ async function saveParticipants() {
     render();
     return;
   }
+  state.busy = "ep-save";
+  render();
   try {
     await api(`/api/leagues/${state.selectedId}/tournaments/${state.detailTournamentId}/participants`, {
       method: "PUT",
@@ -322,9 +350,10 @@ async function saveParticipants() {
     state.editingParticipants = false;
     state.epRows = [];
     await loadSelectedLeague();
-    render();
   } catch (e) {
     state.formError = e.message;
+  } finally {
+    state.busy = null;
     render();
   }
 }
@@ -352,6 +381,8 @@ function goToReview() {
 async function saveTournament() {
   const participants = state.reviewRows.filter((r) => r.name.trim());
   if (!participants.length) return;
+  state.busy = "save-tournament";
+  render();
   try {
     const record = await api(`/api/leagues/${state.selectedId}/tournaments`, {
       method: "POST",
@@ -368,9 +399,10 @@ async function saveTournament() {
     state.tab = "tournaments";
     state.detailTournamentId = record.id;
     await loadSelectedLeague();
-    render();
   } catch (e) {
     state.formError = e.message;
+  } finally {
+    state.busy = null;
     render();
   }
 }
@@ -598,7 +630,11 @@ function renderTournamentDetail() {
           ? `<div style="display:flex;gap:6px">
               <button class="icon-btn" title="Editar jugadores" data-action="open-edit-participants"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></button>
               <button class="icon-btn" title="Editar torneo" data-action="open-edit-tournament" data-id="${t.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-              <button class="icon-btn" title="Eliminar torneo" data-action="delete-tournament" data-id="${t.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+              <button class="icon-btn" title="Eliminar torneo" data-action="delete-tournament" data-id="${t.id}" ${isBusy(`delete-tournament:${t.id}`) ? "disabled" : ""}>${
+              isBusy(`delete-tournament:${t.id}`)
+                ? `<span style="font-size:11px;white-space:nowrap">Eliminando…</span>`
+                : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`
+            }</button>
             </div>`
           : ""
       }
@@ -663,8 +699,8 @@ function renderEditParticipants() {
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
 
       <div style="margin-top:22px;display:flex;justify-content:flex-end;gap:10px">
-        <button class="btn btn-ghost" data-action="ep-cancel">Cancelar</button>
-        <button class="btn btn-gold" data-action="ep-save">✓ Guardar cambios</button>
+        <button class="btn btn-ghost" data-action="ep-cancel" ${isBusy("ep-save") ? "disabled" : ""}>Cancelar</button>
+        <button class="btn btn-gold" data-action="ep-save" ${isBusy("ep-save") ? "disabled" : ""}>${isBusy("ep-save") ? "Guardando…" : "✓ Guardar cambios"}</button>
       </div>
     </div>
   `;
@@ -755,8 +791,8 @@ function renderAddTournament() {
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
 
       <div style="margin-top:22px;display:flex;justify-content:space-between">
-        <button class="btn btn-ghost" data-action="back-to-form">‹ Volver</button>
-        <button class="btn btn-gold" data-action="save-tournament">✓ Guardar torneo</button>
+        <button class="btn btn-ghost" data-action="back-to-form" ${isBusy("save-tournament") ? "disabled" : ""}>‹ Volver</button>
+        <button class="btn btn-gold" data-action="save-tournament" ${isBusy("save-tournament") ? "disabled" : ""}>${isBusy("save-tournament") ? "Guardando…" : "✓ Guardar torneo"}</button>
       </div>
     </div>
   `;
@@ -794,8 +830,8 @@ function renderModal() {
       <input id="m-topn" type="number" min="1" value="5" />
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
       <div class="modal-actions">
-        <button class="btn btn-ghost" data-action="close-modal">Cancelar</button>
-        <button class="btn btn-gold" data-action="submit-new-league">Crear liga</button>
+        <button class="btn btn-ghost" data-action="close-modal" ${isBusy("submit-new-league") ? "disabled" : ""}>Cancelar</button>
+        <button class="btn btn-gold" data-action="submit-new-league" ${isBusy("submit-new-league") ? "disabled" : ""}>${isBusy("submit-new-league") ? "Guardando…" : "Crear liga"}</button>
       </div>
     `
     );
@@ -811,8 +847,8 @@ function renderModal() {
       <input id="m-topn2" type="number" min="1" value="${league ? league.topN : 5}" />
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
       <div class="modal-actions">
-        <button class="btn btn-ghost" data-action="close-modal">Cancelar</button>
-        <button class="btn btn-gold" data-action="submit-settings">Guardar</button>
+        <button class="btn btn-ghost" data-action="close-modal" ${isBusy("submit-settings") ? "disabled" : ""}>Cancelar</button>
+        <button class="btn btn-gold" data-action="submit-settings" ${isBusy("submit-settings") ? "disabled" : ""}>${isBusy("submit-settings") ? "Guardando…" : "Guardar"}</button>
       </div>
     `
     );
@@ -829,8 +865,8 @@ function renderModal() {
       <input id="m-rename" value="${escapeAttr(state.renameOldName)}" />
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
       <div class="modal-actions">
-        <button class="btn btn-ghost" data-action="close-modal">Cancelar</button>
-        <button class="btn btn-gold" data-action="submit-rename">Guardar</button>
+        <button class="btn btn-ghost" data-action="close-modal" ${isBusy("submit-rename") ? "disabled" : ""}>Cancelar</button>
+        <button class="btn btn-gold" data-action="submit-rename" ${isBusy("submit-rename") ? "disabled" : ""}>${isBusy("submit-rename") ? "Guardando…" : "Guardar"}</button>
       </div>
     `
     );
@@ -846,13 +882,14 @@ function renderModal() {
       <input id="m-t-date" type="date" value="${escapeAttr(state.editTournamentDate)}" />
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
       <div class="modal-actions">
-        <button class="btn btn-ghost" data-action="close-modal">Cancelar</button>
-        <button class="btn btn-gold" data-action="submit-edit-tournament">Guardar</button>
+        <button class="btn btn-ghost" data-action="close-modal" ${isBusy("submit-edit-tournament") ? "disabled" : ""}>Cancelar</button>
+        <button class="btn btn-gold" data-action="submit-edit-tournament" ${isBusy("submit-edit-tournament") ? "disabled" : ""}>${isBusy("submit-edit-tournament") ? "Guardando…" : "Guardar"}</button>
       </div>
     `
     );
   }
   if (state.modal === "pin") {
+    const pinBusyLabel = state.pinMode === "setup" ? "Guardando…" : "Verificando…";
     return modalShell(
       state.pinMode === "setup" ? "Configura el PIN de administrador" : "Modo administrador",
       `
@@ -861,8 +898,8 @@ function renderModal() {
       <input id="m-pin" type="password" />
       ${state.formError ? `<div class="modal-error">${escapeHtml(state.formError)}</div>` : ""}
       <div class="modal-actions">
-        <button class="btn btn-ghost" data-action="close-modal">Cancelar</button>
-        <button class="btn btn-gold" data-action="submit-pin">${state.pinMode === "setup" ? "Guardar PIN" : "Entrar"}</button>
+        <button class="btn btn-ghost" data-action="close-modal" ${isBusy("submit-pin") ? "disabled" : ""}>Cancelar</button>
+        <button class="btn btn-gold" data-action="submit-pin" ${isBusy("submit-pin") ? "disabled" : ""}>${isBusy("submit-pin") ? pinBusyLabel : (state.pinMode === "setup" ? "Guardar PIN" : "Entrar")}</button>
       </div>
     `
     );
