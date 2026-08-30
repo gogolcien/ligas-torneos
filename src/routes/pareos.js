@@ -2,13 +2,22 @@ const express = require("express");
 const crypto = require("crypto");
 const store = require("../data/pareoStore");
 const swiss = require("../utils/swiss");
+const bracket = require("../utils/bracket");
 const { requireAdmin } = require("./admin");
 const asyncHandler = require("../utils/asyncHandler");
 
 const router = express.Router();
 
 function serialize(tournament) {
-  const standings = swiss.computeStandings(tournament);
+  const isElimination = tournament.format === "elimination";
+
+  // Standings: fórmula distinta según el formato. En suizo trae
+  // puntos/OP%/OOP%/SL; en eliminación trae posición según ronda de
+  // caída y podio (campeón/subcampeón/3ro/4to).
+  const standings = isElimination
+    ? bracket.computeEliminationStandings(tournament.players, tournament.rounds)
+    : swiss.computeStandings(tournament);
+
   const standingsById = {};
   standings.forEach((s) => {
     standingsById[s.id] = s;
@@ -17,14 +26,22 @@ function serialize(tournament) {
   return {
     id: tournament.id,
     name: tournament.name,
+    format: tournament.format || "swiss",
     status: tournament.status,
     createdAt: tournament.createdAt,
     players: tournament.players.map((p) => ({
       ...p,
-      points: standingsById[p.id]?.points || 0,
-      opPercent: standingsById[p.id]?.opPercent || 0,
-      oopPercent: standingsById[p.id]?.oopPercent || 0,
-      sl: standingsById[p.id]?.sl || 0,
+      ...(isElimination
+        ? {
+            eliminatedInRound: standingsById[p.id]?.eliminatedInRound ?? null,
+            podium: standingsById[p.id]?.podium ?? null,
+          }
+        : {
+            points: standingsById[p.id]?.points || 0,
+            opPercent: standingsById[p.id]?.opPercent || 0,
+            oopPercent: standingsById[p.id]?.oopPercent || 0,
+            sl: standingsById[p.id]?.sl || 0,
+          }),
     })),
     rounds: tournament.rounds.map((r) => ({
       id: r.id,
@@ -61,9 +78,14 @@ router.post(
   "/",
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { name } = req.body || {};
+    const { name, format } = req.body || {};
     if (!name || !String(name).trim()) return res.status(400).json({ error: "El nombre es obligatorio." });
-    const tournament = await store.createPareoTournament({ id: crypto.randomUUID(), name: String(name).trim() });
+    const cleanFormat = format === "elimination" ? "elimination" : "swiss";
+    const tournament = await store.createPareoTournament({
+      id: crypto.randomUUID(),
+      name: String(name).trim(),
+      format: cleanFormat,
+    });
     res.status(201).json(serialize(tournament));
   })
 );
@@ -74,6 +96,22 @@ router.get(
   asyncHandler(async (req, res) => {
     const tournament = await store.getPareoTournament(req.params.id);
     if (!findTournamentOr404(res, tournament)) return;
+    res.json(serialize(tournament));
+  })
+);
+
+// PUT /api/pareos/:id/status -> cambiar estado del torneo, ej. 'finished' (admin)
+router.put(
+  "/:id/status",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { status } = req.body || {};
+    if (!["active", "finished"].includes(status)) {
+      return res.status(400).json({ error: "Estado inválido." });
+    }
+    const existing = await store.getPareoTournament(req.params.id);
+    if (!findTournamentOr404(res, existing)) return;
+    const tournament = await store.setPareoTournamentStatus(req.params.id, status);
     res.json(serialize(tournament));
   })
 );
@@ -95,21 +133,22 @@ router.post(
   "/:id/players",
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { name } = req.body || {};
+    const { name, deck } = req.body || {};
     if (!name || !String(name).trim()) return res.status(400).json({ error: "El nombre es obligatorio." });
     const existing = await store.getPareoTournament(req.params.id);
     if (!findTournamentOr404(res, existing)) return;
-    const tournament = await store.addPlayer(req.params.id, String(name).trim());
+    const cleanDeck = deck != null && String(deck).trim() ? String(deck).trim() : null;
+    const tournament = await store.addPlayer(req.params.id, String(name).trim(), cleanDeck);
     res.status(201).json(serialize(tournament));
   })
 );
 
-// PUT /api/pareos/:id/players/:playerId -> renombrar / inhabilitar / rehabilitar (admin)
+// PUT /api/pareos/:id/players/:playerId -> renombrar / editar deck / inhabilitar / rehabilitar (admin)
 router.put(
   "/:id/players/:playerId",
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { name, enabled } = req.body || {};
+    const { name, enabled, deck } = req.body || {};
     if (name != null && !String(name).trim()) {
       return res.status(400).json({ error: "El nombre no puede quedar vacío." });
     }
@@ -118,6 +157,7 @@ router.put(
     const tournament = await store.updatePlayer(req.params.id, Number(req.params.playerId), {
       name: name != null ? String(name).trim() : undefined,
       enabled: typeof enabled === "boolean" ? enabled : undefined,
+      deck: deck !== undefined ? (String(deck).trim() ? String(deck).trim() : null) : undefined,
     });
     res.json(serialize(tournament));
   })
@@ -140,6 +180,9 @@ router.delete(
 );
 
 // POST /api/pareos/:id/pair-next-round -> genera el pareo de la siguiente ronda (admin)
+// En formato 'swiss' recalcula standings y aplica el algoritmo suizo.
+// En formato 'elimination' arma la Ronda 1 al azar (bracket) o avanza el
+// bracket combinando a los ganadores de la ronda anterior.
 router.post(
   "/:id/pair-next-round",
   requireAdmin,
@@ -147,6 +190,34 @@ router.post(
     const existing = await store.getPareoTournament(req.params.id);
     if (!findTournamentOr404(res, existing)) return;
 
+    if (existing.format === "elimination") {
+      if (existing.rounds.length === 0) {
+        const activePlayers = existing.players.filter((p) => p.enabled);
+        if (activePlayers.length < 2) {
+          return res.status(400).json({ error: "Se necesitan al menos 2 jugadores habilitados." });
+        }
+        const pairs = bracket.generateFirstRound(activePlayers);
+        const tournament = await store.createRoundWithPairs(req.params.id, pairs);
+        return res.status(201).json(serialize(tournament));
+      }
+
+      const lastRound = existing.rounds[existing.rounds.length - 1];
+      if (!bracket.isRoundComplete(lastRound.matches)) {
+        return res.status(400).json({ error: "Aún hay mesas sin resultado en la ronda actual." });
+      }
+      if (lastRound.matches.some((m) => m.isThirdPlace)) {
+        return res.status(400).json({ error: "El torneo ya terminó (Final y 3er lugar ya se jugaron)." });
+      }
+
+      const { pairs, championId } = bracket.generateNextRound(lastRound.matches);
+      if (!pairs.length) {
+        return res.status(400).json({ error: "El torneo ya terminó.", championId });
+      }
+      const tournament = await store.createRoundWithPairs(req.params.id, pairs);
+      return res.status(201).json(serialize(tournament));
+    }
+
+    // ---- formato suizo ----
     const lastRound = existing.rounds[existing.rounds.length - 1];
     if (lastRound) {
       const pending = lastRound.matches.some((m) => m.playerBId != null && !m.result);

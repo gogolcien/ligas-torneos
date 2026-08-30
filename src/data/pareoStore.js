@@ -4,14 +4,14 @@ const pool = require("./db");
 
 async function loadFullPareoTournament(id) {
   const tRes = await pool.query(
-    `SELECT id, name, status, created_at AS "createdAt" FROM pareo_tournaments WHERE id = $1`,
+    `SELECT id, name, format, status, created_at AS "createdAt" FROM pareo_tournaments WHERE id = $1`,
     [id]
   );
   if (tRes.rows.length === 0) return null;
   const tournament = tRes.rows[0];
 
   const playersRes = await pool.query(
-    `SELECT id, name, enabled, seq FROM pareo_players WHERE tournament_id = $1 ORDER BY seq, id`,
+    `SELECT id, name, deck, enabled, seq FROM pareo_players WHERE tournament_id = $1 ORDER BY seq, id`,
     [id]
   );
   tournament.players = playersRes.rows;
@@ -24,7 +24,8 @@ async function loadFullPareoTournament(id) {
   const rounds = [];
   for (const r of roundsRes.rows) {
     const matchesRes = await pool.query(
-      `SELECT id, table_number AS "tableNumber", player_a_id AS "playerAId",
+      `SELECT id, table_number AS "tableNumber", slot_index AS "slotIndex",
+              is_third_place AS "isThirdPlace", player_a_id AS "playerAId",
               player_b_id AS "playerBId", result
        FROM pareo_matches WHERE round_id = $1 ORDER BY table_number`,
       [r.id]
@@ -45,8 +46,12 @@ async function listPareoTournaments() {
   return res.rows;
 }
 
-async function createPareoTournament({ id, name }) {
-  await pool.query(`INSERT INTO pareo_tournaments (id, name, status) VALUES ($1, $2, 'active')`, [id, name]);
+async function createPareoTournament({ id, name, format = "swiss" }) {
+  await pool.query(`INSERT INTO pareo_tournaments (id, name, format, status) VALUES ($1, $2, $3, 'active')`, [
+    id,
+    name,
+    format,
+  ]);
   return loadFullPareoTournament(id);
 }
 
@@ -68,7 +73,7 @@ async function deleteTournament(id) {
 // Agrega un jugador. Si el torneo ya tiene rondas creadas, se le
 // asigna automáticamente un AUTOWIN en la ronda más reciente (llegó
 // tarde y no participó en el pareo de esa ronda).
-async function addPlayer(tournamentId, name) {
+async function addPlayer(tournamentId, name, deck = null) {
   const seqRes = await pool.query(
     `SELECT COALESCE(MAX(seq), 0) + 1 AS next FROM pareo_players WHERE tournament_id = $1`,
     [tournamentId]
@@ -76,8 +81,8 @@ async function addPlayer(tournamentId, name) {
   const seq = seqRes.rows[0].next;
 
   const insertRes = await pool.query(
-    `INSERT INTO pareo_players (tournament_id, name, enabled, seq) VALUES ($1, $2, true, $3) RETURNING id`,
-    [tournamentId, name, seq]
+    `INSERT INTO pareo_players (tournament_id, name, deck, enabled, seq) VALUES ($1, $2, $3, true, $4) RETURNING id`,
+    [tournamentId, name, deck, seq]
   );
   const playerId = insertRes.rows[0].id;
 
@@ -101,7 +106,7 @@ async function addPlayer(tournamentId, name) {
   return loadFullPareoTournament(tournamentId);
 }
 
-async function updatePlayer(tournamentId, playerId, { name, enabled }) {
+async function updatePlayer(tournamentId, playerId, { name, enabled, deck }) {
   const fields = [];
   const values = [playerId, tournamentId];
   if (name != null) {
@@ -111,6 +116,10 @@ async function updatePlayer(tournamentId, playerId, { name, enabled }) {
   if (enabled != null) {
     values.push(enabled);
     fields.push(`enabled = $${values.length}`);
+  }
+  if (deck !== undefined) {
+    values.push(deck);
+    fields.push(`deck = $${values.length}`);
   }
   if (!fields.length) return loadFullPareoTournament(tournamentId);
   await pool.query(
@@ -148,9 +157,9 @@ async function createRoundWithPairs(tournamentId, pairs) {
     for (const p of pairs) {
       const result = p.playerBId == null ? "bye_win" : null;
       await client.query(
-        `INSERT INTO pareo_matches (round_id, tournament_id, table_number, player_a_id, player_b_id, result)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [roundId, tournamentId, table, p.playerAId, p.playerBId, result]
+        `INSERT INTO pareo_matches (round_id, tournament_id, table_number, slot_index, is_third_place, player_a_id, player_b_id, result)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [roundId, tournamentId, table, p.slotIndex ?? null, !!p.isThirdPlace, p.playerAId, p.playerBId, result]
       );
       table += 1;
     }
@@ -177,9 +186,9 @@ async function replaceRoundPairs(tournamentId, roundId, pairs) {
     for (const p of pairs) {
       const result = p.playerBId == null ? "bye_win" : null;
       await client.query(
-        `INSERT INTO pareo_matches (round_id, tournament_id, table_number, player_a_id, player_b_id, result)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [roundId, tournamentId, table, p.playerAId, p.playerBId, result]
+        `INSERT INTO pareo_matches (round_id, tournament_id, table_number, slot_index, is_third_place, player_a_id, player_b_id, result)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [roundId, tournamentId, table, p.slotIndex ?? null, !!p.isThirdPlace, p.playerAId, p.playerBId, result]
       );
       table += 1;
     }
