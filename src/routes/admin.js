@@ -9,27 +9,48 @@ const router = express.Router();
 const MIN_PIN_LENGTH = 6;
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
 
-// token -> timestamp de expiración
-const activeTokens = new Map();
-
-function purgeExpiredTokens() {
-  const now = Date.now();
-  for (const [token, expiresAt] of activeTokens) {
-    if (expiresAt <= now) activeTokens.delete(token);
+// Purga esporádica de sesiones vencidas (no en cada request, para no
+// pegarle a la base de datos de más). ~1 de cada 20 requests que pasan
+// por requireAdmin dispara una purga en segundo plano.
+function maybePurgeExpiredSessions() {
+  if (Math.random() < 0.05) {
+    store.purgeExpiredSessions().catch((err) => console.error("Error purgando sesiones vencidas:", err));
   }
 }
 
-function issueToken() {
+async function issueToken(role = "admin") {
   const token = makeToken();
-  activeTokens.set(token, Date.now() + TOKEN_TTL_MS);
+  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+  await store.createSession(token, role, expiresAt);
   return token;
 }
 
-function requireAdmin(req, res, next) {
-  purgeExpiredTokens();
+// Middleware: exige una sesión válida de CUALQUIER rol (admin u
+// organizador). Deja el rol en req.session para que cada ruta decida
+// qué permite hacer a cada uno.
+async function requireSession(req, res, next) {
+  maybePurgeExpiredSessions();
   const token = req.headers["x-admin-token"];
-  if (token && activeTokens.has(token)) return next();
-  return res.status(401).json({ error: "Se requiere sesión de administrador." });
+  const session = token ? await store.getSession(token) : null;
+  if (!session) return res.status(401).json({ error: "Se requiere iniciar sesión." });
+  req.session = session;
+  req.sessionToken = token;
+  next();
+}
+
+// Middleware: exige específicamente el rol de administrador (se
+// mantiene con este nombre para no tener que tocar todas las rutas
+// que ya lo importan).
+async function requireAdmin(req, res, next) {
+  maybePurgeExpiredSessions();
+  const token = req.headers["x-admin-token"];
+  const session = token ? await store.getSession(token) : null;
+  if (!session || session.role !== "admin") {
+    return res.status(401).json({ error: "Se requiere sesión de administrador." });
+  }
+  req.session = session;
+  req.sessionToken = token;
+  next();
 }
 
 // Límite de intentos para login y setup: máximo 8 intentos cada 10
@@ -58,7 +79,7 @@ router.post("/setup", loginLimiter, asyncHandler(async (req, res) => {
   const pinHash = hashPin(String(pin).trim());
   await store.setAdminPinHash(pinHash);
 
-  const token = issueToken();
+  const token = await issueToken("admin");
   res.json({ token });
 }));
 
@@ -69,14 +90,21 @@ router.post("/login", loginLimiter, asyncHandler(async (req, res) => {
   if (!pin || !verifyPin(String(pin).trim(), pinHash)) {
     return res.status(401).json({ error: "PIN incorrecto." });
   }
-  const token = issueToken();
+  const token = await issueToken("admin");
   res.json({ token });
 }));
 
-router.post("/logout", requireAdmin, (req, res) => {
-  activeTokens.delete(req.headers["x-admin-token"]);
+router.post("/logout", requireSession, asyncHandler(async (req, res) => {
+  await store.deleteSession(req.sessionToken);
   res.json({ ok: true });
+}));
+
+// GET /api/admin/me -> quién soy (para que el cliente pueda confirmar
+// su sesión al cargar sin tener que adivinar por un 401).
+router.get("/me", requireSession, (req, res) => {
+  res.json({ role: req.session.role });
 });
 
 module.exports = router;
 module.exports.requireAdmin = requireAdmin;
+module.exports.requireSession = requireSession;

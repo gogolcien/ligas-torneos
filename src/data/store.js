@@ -74,6 +74,28 @@ async function setAdminPinHash(pinHash) {
   return true;
 }
 
+/* ---------------- Sesiones (persistentes en BD) ---------------- */
+
+async function createSession(token, role, expiresAt) {
+  await pool.query(`INSERT INTO sessions (token, role, expires_at) VALUES ($1, $2, $3)`, [token, role, expiresAt]);
+}
+
+// Devuelve { role } si el token es válido y no ha expirado, o null.
+async function getSession(token) {
+  const res = await pool.query(`SELECT role FROM sessions WHERE token = $1 AND expires_at > now()`, [token]);
+  return res.rows.length ? res.rows[0] : null;
+}
+
+async function deleteSession(token) {
+  await pool.query(`DELETE FROM sessions WHERE token = $1`, [token]);
+}
+
+// Se llama de vez en cuando (no en cada request) para no dejar crecer
+// la tabla con tokens ya vencidos.
+async function purgeExpiredSessions() {
+  await pool.query(`DELETE FROM sessions WHERE expires_at <= now()`);
+}
+
 /* ---------------- Ligas ---------------- */
 
 async function listLeagues() {
@@ -166,6 +188,10 @@ module.exports = {
   init,
   getAdminPinHash,
   setAdminPinHash,
+  createSession,
+  getSession,
+  deleteSession,
+  purgeExpiredSessions,
   listLeagues,
   createLeague,
   getLeague,

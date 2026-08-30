@@ -5,6 +5,20 @@ CREATE TABLE IF NOT EXISTS admin_settings (
   CONSTRAINT single_row CHECK (id = 1)
 );
 
+-- Sesiones persistentes (admin y, más adelante, organizadores). Antes
+-- vivían solo en memoria del proceso Node, así que un reinicio del
+-- servidor (ej. Render Free durmiéndose por inactividad) tiraba a
+-- todos los que tenían la sesión abierta, aunque el navegador siguiera
+-- mandando el token. Guardarlas en la base de datos las hace
+-- sobrevivir a reinicios del servidor.
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  role TEXT NOT NULL DEFAULT 'admin',
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+
 CREATE TABLE IF NOT EXISTS leagues (
   id UUID PRIMARY KEY,
   name TEXT NOT NULL,
