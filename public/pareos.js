@@ -734,15 +734,10 @@ function renderMatchCard(m, tableNum, editable, opts = {}) {
         <div class="pairing-table-num">${mesaLabel}</div>
         <div class="pairing-row">
           <div class="pairing-side ${isLoss ? "loss" : "win"}">
-            <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
-            ${
-              showStats
-                ? `<div class="pairing-side-stats">
-              <span class="stat-full">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}%</span>
-              <span class="stat-compact">P ${a?.points ?? 0} · OP ${Math.round((a?.opPercent || 0) * 100)}%</span>
-            </div>`
-                : ""
-            }
+            <div class="pairing-side-inner">
+              <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
+              ${showStats ? `<span class="pts-badge">${a?.points ?? 0}</span>` : ""}
+            </div>
           </div>
           <div class="${isLoss ? "autolose-tag" : "autowin-tag"}">${isLoss ? "AUTOLOSE" : "AUTOWIN"}</div>
         </div>
@@ -772,15 +767,10 @@ function renderMatchCard(m, tableNum, editable, opts = {}) {
             ? `data-action="set-result" data-id="${m.id}" data-result="a_win" title="Marcar a ${escapeAttr(a?.name || "A")} como ganador"`
             : ""
         }>
-          <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
-          ${
-            showStats
-              ? `<div class="pairing-side-stats">
-            <span class="stat-full">Pts ${a?.points ?? 0} · OP% ${((a?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((a?.oopPercent || 0) * 100).toFixed(1)}%</span>
-            <span class="stat-compact">P ${a?.points ?? 0} · OP ${Math.round((a?.opPercent || 0) * 100)}% · OOP ${Math.round((a?.oopPercent || 0) * 100)}%</span>
-          </div>`
-              : ""
-          }
+          <div class="pairing-side-inner">
+            <div class="pairing-side-name">${escapeHtml(a?.name || "?")}</div>
+            ${showStats ? `<span class="pts-badge">${a?.points ?? 0}</span>` : ""}
+          </div>
         </div>
         <div class="pairing-vs">${busy ? "Guardando…" : "VS"}</div>
         <div class="pairing-side ${sideClass(bWin)} ${canClick ? "clickable" : ""} ${busy ? "is-saving" : ""}" ${
@@ -788,15 +778,10 @@ function renderMatchCard(m, tableNum, editable, opts = {}) {
             ? `data-action="set-result" data-id="${m.id}" data-result="b_win" title="Marcar a ${escapeAttr(b?.name || "B")} como ganador"`
             : ""
         }>
-          <div class="pairing-side-name">${escapeHtml(b?.name || "?")}</div>
-          ${
-            showStats
-              ? `<div class="pairing-side-stats">
-            <span class="stat-full">Pts ${b?.points ?? 0} · OP% ${((b?.opPercent || 0) * 100).toFixed(1)}% · OOP% ${((b?.oopPercent || 0) * 100).toFixed(1)}%</span>
-            <span class="stat-compact">P ${b?.points ?? 0} · OP ${Math.round((b?.opPercent || 0) * 100)}% · OOP ${Math.round((b?.oopPercent || 0) * 100)}%</span>
-          </div>`
-              : ""
-          }
+          <div class="pairing-side-inner">
+            <div class="pairing-side-name">${escapeHtml(b?.name || "?")}</div>
+            ${showStats ? `<span class="pts-badge">${b?.points ?? 0}</span>` : ""}
+          </div>
         </div>
       </div>
       ${
