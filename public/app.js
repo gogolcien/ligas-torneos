@@ -616,7 +616,7 @@ function deckColor(name) {
   return `hsl(${hue}, 62%, 58%)`;
 }
 
-function renderDeckBarChart(title, statsMap, emptyMsg) {
+function renderDeckPieChart(title, statsMap, emptyMsg) {
   const entries = [...statsMap.entries()].sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
     return `
@@ -626,25 +626,34 @@ function renderDeckBarChart(title, statsMap, emptyMsg) {
       </div>`;
   }
   const total = entries.reduce((sum, [, count]) => sum + count, 0);
-  const max = entries[0][1];
+  // Construye el degradado cónico que dibuja el pastel: cada deck ocupa
+  // el arco proporcional a su conteo, en el mismo orden que la leyenda.
+  let acc = 0;
+  const segments = entries.map(([deck, count]) => {
+    const start = (acc / total) * 360;
+    acc += count;
+    const end = (acc / total) * 360;
+    return `${deckColor(deck)} ${start.toFixed(2)}deg ${end.toFixed(2)}deg`;
+  });
+  const gradient = `conic-gradient(${segments.join(", ")})`;
   return `
     <div class="card chart-card">
       <div class="chart-title">${escapeHtml(title)}</div>
-      <div class="chart-bars">
-        ${entries
-          .map(([deck, count]) => {
-            const pct = total ? Math.round((count / total) * 100) : 0;
-            const widthPct = max ? Math.round((count / max) * 100) : 0;
-            return `
-              <div class="chart-bar-row">
-                <div class="chart-bar-label" title="${escapeAttr(deck)}">${escapeHtml(deck)}</div>
-                <div class="chart-bar-track">
-                  <div class="chart-bar-fill" style="width:${widthPct}%;background:${deckColor(deck)}"></div>
-                </div>
-                <div class="chart-bar-count mono">${count} <span class="chart-bar-pct">(${pct}%)</span></div>
-              </div>`;
-          })
-          .join("")}
+      <div class="chart-pie-wrap">
+        <div class="chart-pie" style="background:${gradient}"></div>
+        <div class="chart-legend">
+          ${entries
+            .map(([deck, count]) => {
+              const pct = total ? Math.round((count / total) * 100) : 0;
+              return `
+                <div class="chart-legend-row">
+                  <span class="chart-legend-swatch" style="background:${deckColor(deck)}"></span>
+                  <span class="chart-legend-label" title="${escapeAttr(deck)}">${escapeHtml(deck)}</span>
+                  <span class="chart-legend-count mono">${count} <span class="chart-bar-pct">(${pct}%)</span></span>
+                </div>`;
+            })
+            .join("")}
+        </div>
       </div>
     </div>`;
 }
@@ -657,8 +666,8 @@ function renderDeckCharts() {
   const { winners, top4 } = computeDeckStats(tournaments);
   return `
     <div class="deck-charts">
-      ${renderDeckBarChart("Decks campeones (1er lugar)", winners, "Aún no hay torneos con ganador registrado.")}
-      ${renderDeckBarChart("Decks en Top 4", top4, "Aún no hay suficientes resultados registrados.")}
+      ${renderDeckPieChart("Decks campeones (1er lugar)", winners, "Aún no hay torneos con ganador registrado.")}
+      ${renderDeckPieChart("Decks en Top 4", top4, "Aún no hay suficientes resultados registrados.")}
     </div>
   `;
 }
