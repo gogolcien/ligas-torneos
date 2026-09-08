@@ -537,48 +537,128 @@ function renderStandings(league) {
   const canEdit = state.role === "admin";
   if (!rows.length) return `<div class="card card-fit"><div class="empty-cell">Todavía no hay jugadores en esta liga.</div></div>`;
   return `
-    <div class="card card-fit">
-      <div class="table-scroll">
-      <table class="table-auto">
-        <thead>
-          <tr>
-            <th style="width:34px">#</th>
-            <th>Jugador</th>
-            <th class="col-hide-sm">Último deck</th>
-            <th class="text-right col-hide-xs" title="Participaciones">🏳️</th>
-            <th class="text-center">Puntos</th>
-            <th class="text-right trend-cell"></th>
-            ${!canEdit ? `<th style="width:36px"></th>` : ""}
-            ${canEdit ? `<th style="width:36px"></th>` : ""}
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(
-              (s, i) => `
+    <div class="standings-layout">
+      <div class="card card-fit">
+        <div class="table-scroll">
+        <table class="table-auto">
+          <thead>
             <tr>
-              <td class="mono" style="color:${i === 0 ? "var(--gold)" : "var(--ink-dim)"};font-weight:600">${i + 1}</td>
-              <td style="font-weight:600">${escapeHtml(s.name)}</td>
-              <td class="col-hide-sm" style="color:var(--ink-dim)">${escapeHtml(s.lastDeck) || "—"}</td>
-              <td class="mono text-right col-hide-xs" style="color:var(--ink-dim)">${s.participations}</td>
-              <td class="mono text-center" style="font-weight:700;color:var(--teal);font-size:14.5px">${s.total}</td>
-              <td class="text-right trend-cell">${renderTrendCell(s)}</td>
-              ${
-                !canEdit
-                  ? `<td class="text-right"><button class="icon-btn" title="Ver historial de puntos" data-action="view-player-history" data-name="${escapeAttr(s.name)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></button></td>`
-                  : ""
-              }
-              ${
-                canEdit
-                  ? `<td class="text-right"><button class="icon-btn" title="Corregir nombre" data-action="open-rename" data-name="${escapeAttr(s.name)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></td>`
-                  : ""
-              }
-            </tr>`
-            )
-            .join("")}
-        </tbody>
-      </table>
+              <th style="width:34px">#</th>
+              <th>Jugador</th>
+              <th class="col-hide-sm">Último deck</th>
+              <th class="text-right col-hide-xs" title="Participaciones">🏳️</th>
+              <th class="text-center">Puntos</th>
+              <th class="text-right trend-cell"></th>
+              ${!canEdit ? `<th style="width:36px"></th>` : ""}
+              ${canEdit ? `<th style="width:36px"></th>` : ""}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows
+              .map(
+                (s, i) => `
+              <tr>
+                <td class="mono" style="color:${i === 0 ? "var(--gold)" : "var(--ink-dim)"};font-weight:600">${i + 1}</td>
+                <td style="font-weight:600">${escapeHtml(s.name)}</td>
+                <td class="col-hide-sm" style="color:var(--ink-dim)">${escapeHtml(s.lastDeck) || "—"}</td>
+                <td class="mono text-right col-hide-xs" style="color:var(--ink-dim)">${s.participations}</td>
+                <td class="mono text-center" style="font-weight:700;color:var(--teal);font-size:14.5px">${s.total}</td>
+                <td class="text-right trend-cell">${renderTrendCell(s)}</td>
+                ${
+                  !canEdit
+                    ? `<td class="text-right"><button class="icon-btn" title="Ver historial de puntos" data-action="view-player-history" data-name="${escapeAttr(s.name)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></button></td>`
+                    : ""
+                }
+                ${
+                  canEdit
+                    ? `<td class="text-right"><button class="icon-btn" title="Corregir nombre" data-action="open-rename" data-name="${escapeAttr(s.name)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></td>`
+                    : ""
+                }
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>
+        </div>
       </div>
+      ${renderDeckCharts()}
+    </div>
+  `;
+}
+
+// Cuenta, para el conjunto de torneos de la liga, cuántas veces ha ganado
+// (posición 0) y cuántas veces ha quedado en top 4 (posiciones 0-3) cada
+// deck distinto. Los participantes sin deck capturado se agrupan como
+// "Sin deck" para no perder el conteo del torneo.
+function computeDeckStats(tournaments) {
+  const winners = new Map();
+  const top4 = new Map();
+  (tournaments || []).forEach((t) => {
+    const parts = t.participants || [];
+    if (parts[0]) {
+      const deck = normalizeDeck(parts[0].deck) || "Sin deck";
+      winners.set(deck, (winners.get(deck) || 0) + 1);
+    }
+    parts.slice(0, 4).forEach((p) => {
+      const deck = normalizeDeck(p.deck) || "Sin deck";
+      top4.set(deck, (top4.get(deck) || 0) + 1);
+    });
+  });
+  return { winners, top4 };
+}
+
+// Asigna un color estable (por nombre de deck) para que el mismo deck use
+// siempre el mismo color entre ambas gráficas.
+function deckColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  const hue = hash % 360;
+  return `hsl(${hue}, 62%, 58%)`;
+}
+
+function renderDeckBarChart(title, statsMap, emptyMsg) {
+  const entries = [...statsMap.entries()].sort((a, b) => b[1] - a[1]);
+  if (!entries.length) {
+    return `
+      <div class="card chart-card">
+        <div class="chart-title">${escapeHtml(title)}</div>
+        <div class="empty-cell" style="padding:14px 0">${escapeHtml(emptyMsg)}</div>
+      </div>`;
+  }
+  const total = entries.reduce((sum, [, count]) => sum + count, 0);
+  const max = entries[0][1];
+  return `
+    <div class="card chart-card">
+      <div class="chart-title">${escapeHtml(title)}</div>
+      <div class="chart-bars">
+        ${entries
+          .map(([deck, count]) => {
+            const pct = total ? Math.round((count / total) * 100) : 0;
+            const widthPct = max ? Math.round((count / max) * 100) : 0;
+            return `
+              <div class="chart-bar-row">
+                <div class="chart-bar-label" title="${escapeAttr(deck)}">${escapeHtml(deck)}</div>
+                <div class="chart-bar-track">
+                  <div class="chart-bar-fill" style="width:${widthPct}%;background:${deckColor(deck)}"></div>
+                </div>
+                <div class="chart-bar-count mono">${count} <span class="chart-bar-pct">(${pct}%)</span></div>
+              </div>`;
+          })
+          .join("")}
+      </div>
+    </div>`;
+}
+
+// Gráficas de representación de decks a un lado de la tabla de
+// clasificación: qué decks han ganado primer lugar y qué decks han
+// llegado a top 4, a lo largo de todos los torneos registrados en la liga.
+function renderDeckCharts() {
+  const tournaments = state.leagueData.tournaments || [];
+  const { winners, top4 } = computeDeckStats(tournaments);
+  return `
+    <div class="deck-charts">
+      ${renderDeckBarChart("Decks campeones (1er lugar)", winners, "Aún no hay torneos con ganador registrado.")}
+      ${renderDeckBarChart("Decks en Top 4", top4, "Aún no hay suficientes resultados registrados.")}
     </div>
   `;
 }
