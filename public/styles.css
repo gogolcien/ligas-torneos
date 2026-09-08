@@ -101,14 +101,18 @@ tbody tr.clickable:hover { cursor: pointer; }
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
   color: var(--ink-dim); margin-bottom: 12px;
 }
-.chart-bars { display: flex; flex-direction: column; gap: 10px; }
-.chart-bar-row { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 9px; }
-.chart-bar-label {
-  font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.chart-pie-wrap { display: flex; align-items: center; gap: 16px; }
+.chart-pie {
+  width: 104px; height: 104px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--line) inset;
 }
-.chart-bar-track { background: var(--panel2); border-radius: 999px; height: 8px; overflow: hidden; }
-.chart-bar-fill { height: 100%; border-radius: 999px; min-width: 3px; }
-.chart-bar-count { font-size: 11px; color: var(--ink-dim); white-space: nowrap; }
+.chart-legend { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.chart-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.chart-legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.chart-legend-label {
+  color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.chart-legend-count { margin-left: auto; font-size: 11px; color: var(--ink-dim); white-space: nowrap; flex-shrink: 0; }
 .chart-bar-pct { color: var(--ink-dim); }
 
 /* --------- tendencia y corona --------- */
