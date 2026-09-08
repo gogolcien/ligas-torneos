@@ -648,10 +648,8 @@ function renderDeckPieChart(title, statsMap, emptyMsg) {
               return `
                 <div class="chart-legend-row">
                   <span class="chart-legend-swatch" style="background:${deckColor(deck)}"></span>
-                  <span class="chart-legend-text">
-                    <span class="chart-legend-label">${escapeHtml(deck)}</span>
-                    <span class="chart-legend-count mono">${count} <span class="chart-bar-pct">(${pct}%)</span></span>
-                  </span>
+                  <span class="chart-legend-label">${escapeHtml(deck)}</span>
+                  <span class="chart-legend-count mono">${count} <span class="chart-bar-pct">(${pct}%)</span></span>
                 </div>`;
             })
             .join("")}
